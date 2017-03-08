@@ -1,0 +1,2 @@
+# HAS
+Hadoop Authentication Server
