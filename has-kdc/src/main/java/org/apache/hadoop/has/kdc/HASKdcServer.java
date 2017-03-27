@@ -17,7 +17,7 @@
  *  under the License.
  *
  */
-package org.apache.hadoop.haskdc;
+package org.apache.hadoop.has.kdc;
 
 import org.apache.kerby.kerberos.kdc.impl.NettyKdcServerImpl;
 import org.apache.kerby.kerberos.kerb.KrbException;
@@ -46,7 +46,22 @@ public class HASKdcServer extends KdcServer {
 
         LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
 
-        kadmin.checkBuiltinPrincipals();
+
+        kadmin.createBuiltinPrincipals();
+
+        kadmin.addPrincipal("hdfs/localhost@HADOOP.COM");
+        kadmin.addPrincipal("HTTP/localhost@HADOOP.COM");
+        kadmin.addPrincipal("jiajia/localhost@HADOOP.COM","jiajia");
+        kadmin.exportKeytab(new File("/etc/hadoop/conf/jiajia.keytab"), "jiajia/localhost@HADOOP.COM");
+        File keytabFile = new File("/etc/hadoop/conf/hdfs.keytab");
+        kadmin.exportKeytab(keytabFile, "hdfs/localhost@HADOOP.COM");
+        kadmin.exportKeytab(keytabFile, "HTTP/localhost@HADOOP.COM");
+        System.out.println("The keytab for hadoop principal "
+          + " has been exported to the specified file "
+          + keytabFile.getAbsolutePath() + ", please safely keep it, "
+          + "in order to use it start hadoop services later");
+
+        kadmin.addPrincipal("hdfs1");
     }
 
     private static final String USAGE = (OSUtil.isWindows()

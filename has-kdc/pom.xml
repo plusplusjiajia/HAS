@@ -75,6 +75,22 @@
       <artifactId>slf4j-api</artifactId>
       <version>1.7.21</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>3.0.0-alpha2</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>1.19</version>
+    </dependency>
   </dependencies>
 
    <build>
@@ -113,6 +129,20 @@
                 </copy>
                 <copy toDir="${project.build.directory}/">
                   <fileset dir="${basedir}/src/main/resources/">
+                  </fileset>
+                </copy>
+                <copy file="${basedir}/src/main/webapps/proto-web.xml"
+                      tofile="${project.build.directory}/webapps/has/WEB-INF/web.xml"
+                      filtering="true"/>
+                <copy toDir="${project.build.directory}/webapps">
+                  <fileset dir="${basedir}/src/main/webapps">
+                    <exclude name="**/proto-web.xml"/>
+                  </fileset>
+                </copy>
+                <copy todir="${project.build.directory}/test-classes/webapps">
+                  <fileset dir="${project.build.directory}/webapps">
+                    <exclude name="proto-*-web.xml"/>
+                    <exclude name="**/proto-web.xml"/>
                   </fileset>
                 </copy>
               </target>
