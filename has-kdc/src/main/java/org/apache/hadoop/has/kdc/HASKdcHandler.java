@@ -165,25 +165,8 @@ public class HASKdcHandler {
      */
     public KrbMessage handleMessage(AuthToken authToken) throws KrbException {
 
-        AsReq asReq = createAsReq();
+        AsReq asReq = createAsReq(authToken);
         KdcRequest kdcRequest = new AsRequest(asReq, kdcContext);
-
-        PaTokenRequest tokenPa = new PaTokenRequest();
-        KrbToken krbToken = new KrbToken(authToken, TokenFormat.JWT);
-        tokenPa.setToken(krbToken);
-        TokenInfo info = new TokenInfo();
-        info.setTokenVendor(authToken.getIssuer());
-        tokenPa.setTokenInfo(info);
-
-//        EncryptedData paDataValue = EncryptionUtil.seal(tokenPa,
-//            kdcRequest.getAsKey(), KeyUsage.PA_TOKEN);
-
-        PaDataEntry paDataEntry = new PaDataEntry();
-        paDataEntry.setPaDataType(PaDataType.TOKEN_REQUEST);
-        paDataEntry.setPaDataValue(KrbCodec.encode(tokenPa));
-
-        PaData paData = kdcRequest.getPreauthContext().getOutputPaData();
-        paData.addElement(paDataEntry);
 
         KrbMessage krbResponse;
 
@@ -253,11 +236,28 @@ public class HASKdcHandler {
         return error;
     }
 
-    public AsReq createAsReq() throws KrbException {
+    public AsReq createAsReq(AuthToken authToken) throws KrbException {
         AsReq asReq = new AsReq();
         KdcReqBody body = makeReqBody();
         asReq.setReqBody(body);
-//        asReq.setPaData(getPreauthContext().getOutputPaData());
+
+        PaTokenRequest tokenPa = new PaTokenRequest();
+        KrbToken krbToken = new KrbToken(authToken, TokenFormat.JWT);
+        tokenPa.setToken(krbToken);
+        TokenInfo info = new TokenInfo();
+        info.setTokenVendor(authToken.getIssuer());
+        tokenPa.setTokenInfo(info);
+
+//        EncryptedData paDataValue = EncryptionUtil.seal(tokenPa,
+//            kdcRequest.getAsKey(), KeyUsage.PA_TOKEN);
+
+        PaDataEntry paDataEntry = new PaDataEntry();
+        paDataEntry.setPaDataType(PaDataType.TOKEN_REQUEST);
+        paDataEntry.setPaDataValue(KrbCodec.encode(tokenPa));
+
+        PaData paData = new PaData();
+        paData.addElement(paDataEntry);
+        asReq.setPaData(paData);
         return asReq;
     }
 
