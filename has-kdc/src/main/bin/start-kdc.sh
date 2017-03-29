@@ -29,4 +29,4 @@ done
 java $DEBUG \
 -classpath lib/*:has-kdc-1.0.0-SNAPSHOT.jar:. \
 -DKERBY_LOGFILE=kdc \
-HASKdcServer -start $args
+org.apache.hadoop.has.kdc.HASKdcServer -start $args

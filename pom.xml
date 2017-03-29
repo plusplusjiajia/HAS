@@ -33,6 +33,7 @@
 
   <modules>
     <module>has-kdc</module>
+    <module>has-client</module>
     <module>ram</module>
   </modules>
 

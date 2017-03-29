@@ -48,7 +48,8 @@ public class TestHASHttpServer {
 
   @Parameterized.Parameters
   public static Collection<Object[]> policy() {
-    Object[][] params = new Object[][] { { HttpConfig.Policy.HTTP_ONLY }};
+    Object[][] params = new Object[][]{{HttpConfig.Policy.HTTP_ONLY},
+        {HttpConfig.Policy.HTTPS_ONLY}, {HttpConfig.Policy.HTTP_AND_HTTPS}};
     return Arrays.asList(params);
   }
 
@@ -65,8 +66,16 @@ public class TestHASHttpServer {
     FileUtil.fullyDelete(base);
     base.mkdirs();
     conf = new Configuration();
+    keystoresDir = new File(BASEDIR).getAbsolutePath();
+    sslConfDir = KeyStoreTestUtil.getClasspathDir(TestHASHttpServer.class);
+    KeyStoreTestUtil.setupSSLConfig(keystoresDir, sslConfDir, conf, false);
     connectionFactory = URLConnectionFactory
         .newDefaultURLConnectionFactory(conf);
+//    conf.set(DFSConfigKeys.DFS_CLIENT_HTTPS_KEYSTORE_RESOURCE_KEY,
+//        KeyStoreTestUtil.getClientSSLConfigFileName());
+//    conf.set(DFSConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY,
+//        KeyStoreTestUtil.getServerSSLConfigFileName());
+
   }
 
   @AfterClass
@@ -77,6 +86,7 @@ public class TestHASHttpServer {
   @Test
   public void testHttpPolicy() throws Exception {
     conf.set(HASConfigKeys.HAS_HTTP_POLICY_KEY, policy.name());
+    conf.set(HASConfigKeys.HAS_HTTPS_ADDRESS_KEY, "localhost:0");
 
     InetSocketAddress addr = InetSocketAddress.createUnresolved("localhost", 8099);
     HASHttpServer server = null;
@@ -109,6 +119,7 @@ public class TestHASHttpServer {
       URLConnection conn = connectionFactory.openConnection(url);
       conn.connect();
       conn.getContent();
+      System.out.println(scheme + "###"+ conn.getContent());
     } catch (Exception e) {
       return false;
     }

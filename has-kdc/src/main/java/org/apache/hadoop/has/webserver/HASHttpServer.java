@@ -82,7 +82,8 @@ public class HASHttpServer {
    *
    */
   public static HttpServer2.Builder httpServerTemplateForHAS(
-          Configuration conf, final InetSocketAddress httpAddr, String name) throws IOException {
+          Configuration conf, final InetSocketAddress httpAddr,
+          final InetSocketAddress httpsAddr, String name) throws IOException {
     HttpConfig.Policy policy = getHttpPolicy(conf);
 
     HttpServer2.Builder builder = new HttpServer2.Builder().setName(name);
@@ -97,7 +98,94 @@ public class HASHttpServer {
       LOG.info("Starting Web-server for " + name + " at: " + uri);
     }
 
+    if (policy.isHttpsEnabled() && httpsAddr != null) {
+      Configuration sslConf = loadSslConfiguration(conf);
+      loadSslConfToHttpServerBuilder(builder, sslConf);
+
+      if (httpsAddr.getPort() == 0) {
+        builder.setFindPort(true);
+      }
+
+      URI uri = URI.create("https://" + NetUtils.getHostPortString(httpsAddr));
+      builder.addEndpoint(uri);
+      LOG.info("Starting Web-server for " + name + " at: " + uri);
+    }
+
     return builder;
+  }
+
+    /**
+   * Load HTTPS-related configuration.
+   */
+  public static Configuration loadSslConfiguration(Configuration conf) {
+    Configuration sslConf = new Configuration(false);
+
+    sslConf.addResource(conf.get(
+        HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY,
+        HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_DEFAULT));
+
+    final String[] reqSslProps = {
+        HASConfigKeys.DFS_SERVER_HTTPS_TRUSTSTORE_LOCATION_KEY,
+        HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_LOCATION_KEY,
+        HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY,
+        HASConfigKeys.DFS_SERVER_HTTPS_KEYPASSWORD_KEY
+    };
+
+    // Check if the required properties are included
+    for (String sslProp : reqSslProps) {
+      if (sslConf.get(sslProp) == null) {
+        LOG.warn("SSL config " + sslProp + " is missing. If " +
+            HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY +
+            " is specified, make sure it is a relative path");
+      }
+    }
+
+    boolean requireClientAuth = conf.getBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY,
+        HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_DEFAULT);
+    sslConf.setBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY, requireClientAuth);
+    return sslConf;
+  }
+
+  public static HttpServer2.Builder loadSslConfToHttpServerBuilder(HttpServer2.Builder builder,
+                                                                   Configuration sslConf) {
+    return builder
+        .needsClientAuth(
+            sslConf.getBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY,
+                HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_DEFAULT))
+        .keyPassword(getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_KEYPASSWORD_KEY))
+        .keyStore(sslConf.get("ssl.server.keystore.location"),
+            getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY),
+            sslConf.get("ssl.server.keystore.type", "jks"))
+        .trustStore(sslConf.get("ssl.server.truststore.location"),
+            getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_TRUSTSTORE_PASSWORD_KEY),
+            sslConf.get("ssl.server.truststore.type", "jks"))
+        .excludeCiphers(
+            sslConf.get("ssl.server.exclude.cipher.list"));
+  }
+
+  /**
+   * Leverages the Configuration.getPassword method to attempt to get
+   * passwords from the CredentialProvider API before falling back to
+   * clear text in config - if falling back is allowed.
+   *
+   * @param conf  Configuration instance
+   * @param alias name of the credential to retreive
+   * @return String credential value or null
+   */
+  static String getPassword(Configuration conf, String alias) {
+    String password = null;
+    try {
+      char[] passchars = conf.getPassword(alias);
+      if (passchars != null) {
+        password = new String(passchars);
+      }
+    } catch (IOException ioe) {
+      LOG.warn("Setting password to null since IOException is caught"
+          + " when getting password", ioe);
+
+      password = null;
+    }
+    return password;
   }
 
   /**
@@ -110,7 +198,22 @@ public class HASHttpServer {
 
     final InetSocketAddress httpAddr = bindAddress;
 
-    HttpServer2.Builder builder = httpServerTemplateForHAS(conf, httpAddr, "has");
+    final String httpsAddrString = conf.getTrimmed(
+        HASConfigKeys.HAS_HTTPS_ADDRESS_KEY,
+        HASConfigKeys.HAS_HTTPS_ADDRESS_DEFAULT);
+    InetSocketAddress httpsAddr = NetUtils.createSocketAddr(httpsAddrString);
+
+    if (httpsAddr != null) {
+      // If DFS_NAMENODE_HTTPS_BIND_HOST_KEY exists then it overrides the
+      // host name portion of DFS_NAMENODE_HTTPS_ADDRESS_KEY.
+      final String bindHost =
+          conf.getTrimmed(HASConfigKeys.HAS_HTTPS_BIND_HOST_KEY);
+      if (bindHost != null && !bindHost.isEmpty()) {
+        httpsAddr = new InetSocketAddress(bindHost, httpsAddr.getPort());
+      }
+    }
+
+    HttpServer2.Builder builder = httpServerTemplateForHAS(conf, httpAddr, httpsAddr, "has");
 
     httpServer = builder.build();
 
@@ -120,6 +223,14 @@ public class HASHttpServer {
     int connIdx = 0;
     if (policy.isHttpEnabled()) {
       httpAddress = httpServer.getConnectorAddress(connIdx++);
+      conf.set(HASConfigKeys.HAS_HTTP_ADDRESS_KEY,
+          NetUtils.getHostPortString(httpAddress));
+    }
+
+    if (policy.isHttpsEnabled()) {
+      httpsAddress = httpServer.getConnectorAddress(connIdx);
+      conf.set(HASConfigKeys.HAS_HTTPS_ADDRESS_KEY,
+          NetUtils.getHostPortString(httpsAddress));
     }
 
   }

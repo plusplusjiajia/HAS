@@ -19,22 +19,47 @@
  */
 package org.apache.hadoop.has.kdc;
 
-import org.apache.kerby.kerberos.kdc.impl.NettyKdcServerImpl;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.has.webserver.HASConfigKeys;
+import org.apache.hadoop.has.webserver.HttpKdcServerImpl;
+import org.apache.hadoop.http.HttpConfig;
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.admin.kadmin.local.LocalKadmin;
 import org.apache.kerby.kerberos.kerb.admin.kadmin.local.LocalKadminImpl;
+import org.apache.kerby.kerberos.kerb.client.ClientUtil;
+import org.apache.kerby.kerberos.kerb.client.KrbConfig;
+import org.apache.kerby.kerberos.kerb.client.KrbSetting;
 import org.apache.kerby.kerberos.kerb.server.KdcServer;
 import org.apache.kerby.util.OSUtil;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 
 /**
  * The HAS KDC server implementation.
  */
 public class HASKdcServer extends KdcServer {
+
+    private KrbSetting krbSetting;
     public HASKdcServer(File confDir) throws KrbException {
         super(confDir);
-        setInnerKdcImpl(new NettyKdcServerImpl(getKdcSetting()));
+
+        KrbConfig krbConfig = ClientUtil.getConfig(confDir);
+        if (krbConfig == null) {
+            krbConfig = new KrbConfig();
+        }
+        this.krbSetting = new KrbSetting(krbConfig);
+
+        Configuration conf = new Configuration();
+        conf.set(HASConfigKeys.HAS_HTTP_POLICY_KEY, HttpConfig.Policy.HTTP_ONLY.name());
+        conf.set(HASConfigKeys.HAS_HTTPS_ADDRESS_KEY, "localhost:8091");
+        InetSocketAddress addr = InetSocketAddress.createUnresolved("localhost", 8091);
+
+        setInnerKdcImpl(new HttpKdcServerImpl(conf, addr, getKdcSetting(), this));
+    }
+
+    public KrbSetting getKrbSetting() {
+        return krbSetting;
     }
 
     /**

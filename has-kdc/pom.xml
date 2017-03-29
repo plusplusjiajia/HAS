@@ -46,6 +46,11 @@
       <version>1.0.0-RC3-SNAPSHOT</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>token-provider</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-transport</artifactId>
       <version>4.0.29.Final</version>
@@ -91,6 +96,22 @@
       <artifactId>jersey-client</artifactId>
       <version>1.19</version>
     </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk16</artifactId>
+      <version>1.46</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>has-client</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>token-provider</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
    <build>
@@ -131,9 +152,6 @@
                   <fileset dir="${basedir}/src/main/resources/">
                   </fileset>
                 </copy>
-                <copy file="${basedir}/src/main/webapps/proto-web.xml"
-                      tofile="${project.build.directory}/webapps/has/WEB-INF/web.xml"
-                      filtering="true"/>
                 <copy toDir="${project.build.directory}/webapps">
                   <fileset dir="${basedir}/src/main/webapps">
                     <exclude name="**/proto-web.xml"/>
@@ -150,6 +168,14 @@
           </execution>
         </executions>
       </plugin>
-  </plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>
