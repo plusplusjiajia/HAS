@@ -51,6 +51,36 @@
       <version>1.0.0-RC3-SNAPSHOT</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>kerb-server</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>kerb-simplekdc</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>kerb-crypto</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>kerb-common</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>kerb-admin</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>kerb-admin-server</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-transport</artifactId>
       <version>4.0.29.Final</version>

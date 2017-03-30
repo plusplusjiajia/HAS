@@ -32,8 +32,10 @@ import org.apache.kerby.kerberos.kerb.KrbRuntime;
 import org.apache.kerby.kerberos.kerb.client.KrbContext;
 import org.apache.kerby.kerberos.kerb.common.EncryptionUtil;
 import org.apache.kerby.kerberos.kerb.common.KrbUtil;
+import org.apache.kerby.kerberos.kerb.server.KdcConfigKey;
 import org.apache.kerby.kerberos.kerb.server.KdcContext;
 import org.apache.kerby.kerberos.kerb.server.KdcRecoverableException;
+import org.apache.kerby.kerberos.kerb.server.KdcServer;
 import org.apache.kerby.kerberos.kerb.server.preauth.PreauthHandler;
 import org.apache.kerby.kerberos.kerb.server.request.AsRequest;
 import org.apache.kerby.kerberos.kerb.server.request.KdcRequest;
@@ -61,6 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class HASKdcHandler {
@@ -68,6 +71,7 @@ public class HASKdcHandler {
 
     private KdcContext kdcContext;
     private KrbContext krbContext;
+    private KdcServer kdcServer;
 
     /**
      * Constructor with kdc context.
@@ -77,6 +81,7 @@ public class HASKdcHandler {
     public HASKdcHandler(HASKdcServer kdcServer) {
         this.krbContext = new KrbContext();
         this.krbContext.init(kdcServer.getKrbSetting());
+        this.kdcServer = kdcServer;
         prepareHandler(kdcServer);
     }
 
@@ -86,6 +91,10 @@ public class HASKdcHandler {
 
     public KdcContext getKdcContext() {
         return kdcContext;
+    }
+
+    private KdcServer getKdcServer() {
+        return kdcServer;
     }
 
     static {
@@ -135,10 +144,17 @@ public class HASKdcHandler {
         AuthToken authToken = KrbRuntime.getTokenProvider().createTokenFactory().createToken();
         authToken.setIssuer("Aliyun");
         authToken.setSubject(response.getUser().getUserName());
-        List<String> aud = new ArrayList<String>();
-        aud.add("krbtgt");
-        authToken.setAudiences(aud);
+        List<String> auds = new ArrayList<String>();
+        String audience = getAudience("krbtgt");
+        auds.add(audience);
+        authToken.setAudiences(auds);
 //        authToken.setIssueTime(new Date(response.getUser().getCreateDate()));
+
+        // Set expiration in 60 minutes
+        final Date now = new Date(new Date().getTime() / 1000 * 1000);
+        Date exp = new Date(now.getTime() + 1000 * 60 * 60);
+        authToken.setExpirationTime(exp);
+
         authToken.addAttribute("userName", response.getUser().getUserName());
         authToken.addAttribute("createTime", response.getUser().getCreateDate());
         authToken.addAttribute("userId", response.getUser().getUserId());
@@ -146,6 +162,10 @@ public class HASKdcHandler {
         authToken.addAttribute("mobilePhone", response.getUser().getMobilePhone());
 
         return authToken;
+    }
+
+    private String getAudience(String name) {
+        return name + "/" + getKdcContext().getKdcRealm() + "@" + getKdcContext().getKdcRealm();
     }
 
     public KrbMessage getResponse(String regionId, String accessKeyId, String secret, String userName) {
@@ -167,6 +187,8 @@ public class HASKdcHandler {
 
         AsReq asReq = createAsReq(authToken);
         KdcRequest kdcRequest = new AsRequest(asReq, kdcContext);
+        kdcRequest.setHttps(true);
+        getKdcServer().getKdcConfig().setString(KdcConfigKey.TOKEN_ISSUERS, "Aliyun");
 
         KrbMessage krbResponse;
 

@@ -105,10 +105,20 @@ public class HASWebMethods {
                     ObjectMapper MAPPER = new ObjectMapper();
                     String js = null;
                     final Map<String, Object> m = new TreeMap<String, Object>();
+
+//JUST FOR DEBUG
+//                    AsRep asRep1 = new AsRep();
+//                    try {
+//                        asRep1.decode(asRep.encode());
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                    System.out.println("###client name:" + asRep1.getCname());
+
                     Base64 base64 = new Base64(0);
                     try {
                         m.put("type", type);
-                        m.put("krbMessage", base64.encode(asRep.encode()));
+                        m.put("krbMessage", base64.encodeToString(asRep.encode()));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
