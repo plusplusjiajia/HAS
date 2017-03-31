@@ -27,9 +27,9 @@ import org.apache.hadoop.has.kdc.HASKdcServer;
 import org.apache.hadoop.http.HttpConfig;
 import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.kerby.kerberos.kdc.impl.NettyKdcServerImpl;
 import org.apache.kerby.kerberos.kerb.server.KdcContext;
 import org.apache.kerby.kerberos.kerb.server.KdcSetting;
-import org.apache.kerby.kerberos.kerb.server.impl.AbstractInternalKdcServer;
 
 import javax.servlet.ServletContext;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import java.net.URI;
 /**
  * A Netty based KDC server implementation.
  */
-public class HttpKdcServerImpl extends AbstractInternalKdcServer {
+public class HttpKdcServerImpl extends NettyKdcServerImpl {
     public static final Log LOG = LogFactory.getLog(HttpKdcServerImpl.class.getName());
 
     private KdcContext kdcContext;

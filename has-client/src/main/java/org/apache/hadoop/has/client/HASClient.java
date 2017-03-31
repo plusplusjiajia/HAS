@@ -18,15 +18,39 @@
 
 package org.apache.hadoop.has.client;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.kerby.kerberos.kerb.KrbCodec;
+import org.apache.kerby.kerberos.kerb.KrbException;
+import org.apache.kerby.kerberos.kerb.ccache.CredentialCache;
+import org.apache.kerby.kerberos.kerb.crypto.EncryptionHandler;
+import org.apache.kerby.kerberos.kerb.type.base.EncryptedData;
+import org.apache.kerby.kerberos.kerb.type.base.EncryptionKey;
+import org.apache.kerby.kerberos.kerb.type.base.EncryptionType;
+import org.apache.kerby.kerberos.kerb.type.base.KeyUsage;
+import org.apache.kerby.kerberos.kerb.type.base.KrbError;
+import org.apache.kerby.kerberos.kerb.type.base.KrbMessage;
+import org.apache.kerby.kerberos.kerb.type.base.KrbMessageType;
+import org.apache.kerby.kerberos.kerb.type.base.PrincipalName;
+import org.apache.kerby.kerberos.kerb.type.kdc.EncAsRepPart;
+import org.apache.kerby.kerberos.kerb.type.kdc.EncKdcRepPart;
+import org.apache.kerby.kerberos.kerb.type.kdc.KdcRep;
+import org.apache.kerby.kerberos.kerb.type.ticket.TgtTicket;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
 public class HASClient {
+    public static final Log LOG = LogFactory.getLog(HASClient.class);
 
 
-    /**
-     * Default constructor.
-     */
-    public HASClient() {
-
-    }
 
 //    protected TgtTicket doRequestTgt(AsRequest tgtTktReq) throws KrbException {
 //        doRequest(tgtTktReq);
@@ -42,4 +66,170 @@ public class HASClient {
 //    }
 
 
+    public static void main(String[] args) {
+        try {
+            Client client = Client.create();
+            String regionId = "cn-hangzhou";
+            String accessKeyId = "***";
+            String secret = "***";
+            String userName = "***";
+
+            WebResource webResource = client
+                .resource("http://localhost:8091/has/v1/welcome?type=ALIYUN&regionId=" + regionId
+                    + "&accessKeyId=" + accessKeyId
+                    + "&secret=" + secret
+                    + "&userName=" + userName);
+
+            ClientResponse response = webResource.accept("application/json")
+                .get(ClientResponse.class);
+
+            if (response.getStatus() != 200) {
+                throw new RuntimeException("Failed : HTTP error code : "
+                    + response.getStatus());
+            }
+            if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
+
+                JSONObject json = response.getEntity(JSONObject.class);
+
+
+                System.out.println("Output from Server .... \n");
+                System.out.println(json);
+
+                handleResponse(json, accessKeyId, secret);
+
+            } else {
+                System.out.println("ERROR! " + response.getStatus());
+                System.out.println(response.getEntity(String.class));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static KrbMessage getKrbMessage(JSONObject json) throws KrbException {
+        try {
+            String type = json.getString("type");
+            if (type.equals("ALIYUN")) {
+                String krbMessageString = json.getString("krbMessage");
+                Base64 base64 = new Base64(0);
+                byte[] krbMessage = base64.decode(krbMessageString);
+
+                ByteBuffer byteBuffer = ByteBuffer.wrap(krbMessage);
+                KrbMessage kdcRep;
+
+                try {
+                    kdcRep = KrbCodec.decodeMessage(byteBuffer);
+                } catch (IOException e) {
+                    throw new KrbException("Krb decoding message failed", e);
+                }
+                return kdcRep;
+
+//                AsRep asRep = new AsRep();
+//                try {
+//                    asRep.decode(krbMessage);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//                return asRep;
+
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public static void handleResponse(JSONObject json, String accessKeyId, String secret) throws KrbException {
+        KrbMessage kdcRep = getKrbMessage(json);
+
+        KrbMessageType messageType = kdcRep.getMsgType();
+        if (messageType == KrbMessageType.AS_REP) {
+            processResponse((KdcRep) kdcRep, accessKeyId, secret);
+        } else if (messageType == KrbMessageType.TGS_REP) {
+            // TODO
+        } else if (messageType == KrbMessageType.KRB_ERROR) {
+            KrbError error = (KrbError) kdcRep;
+            LOG.info("KDC server response with message: "
+                + error.getErrorCode().getMessage());
+
+            throw new KrbException(error.getErrorCode(), error.getEtext());
+        }
+    }
+
+    public static void processResponse(KdcRep kdcRep, String accessKeyId, String secret) throws KrbException {
+
+        System.out.print("as rep: " + kdcRep.getCname());
+
+        PrincipalName clientPrincipal = kdcRep.getCname();
+        String clientRealm = kdcRep.getCrealm();
+        clientPrincipal.setRealm(clientRealm);
+
+        EncryptionKey clientKey = getClientKey(accessKeyId, secret, kdcRep.getEncryptedEncPart().getEType());
+
+        byte[] decryptedData = decryptWithClientKey(kdcRep.getEncryptedEncPart(),
+                KeyUsage.AS_REP_ENCPART, clientKey);
+        if ((decryptedData[0] & 0x1f) == 26) {
+            decryptedData[0] = (byte) (decryptedData[0] - 1);
+        }
+        EncKdcRepPart encKdcRepPart = new EncAsRepPart();
+        try {
+            encKdcRepPart.decode(decryptedData);
+        } catch (IOException e) {
+            throw new KrbException("Failed to decode EncAsRepPart", e);
+        }
+        kdcRep.setEncPart(encKdcRepPart);
+
+//        if (getChosenNonce() != encKdcRepPart.getNonce()) {
+//            throw new KrbException("Nonce didn't match");
+//        }
+
+//        PrincipalName returnedServerPrincipal = encKdcRepPart.getSname();
+//        returnedServerPrincipal.setRealm(encKdcRepPart.getSrealm());
+//        PrincipalName requestedServerPrincipal = getServerPrincipal();
+//        if (requestedServerPrincipal.getRealm() == null) {
+//            requestedServerPrincipal.setRealm(getContext().getKrbSetting().getKdcRealm());
+//        }
+//        if (!returnedServerPrincipal.equals(requestedServerPrincipal)) {
+//            throw new KrbException(KrbErrorCode.KDC_ERR_SERVER_NOMATCH);
+//        }
+
+//        HostAddresses hostAddresses = getHostAddresses();
+//        if (hostAddresses != null) {
+//            List<HostAddress> requestHosts = hostAddresses.getElements();
+//            if (!requestHosts.isEmpty()) {
+//                List<HostAddress> responseHosts = encKdcRepPart.getCaddr().getElements();
+//                for (HostAddress h : requestHosts) {
+//                    if (!responseHosts.contains(h)) {
+//                        throw new KrbException("Unexpected client host");
+//                    }
+//                }
+//            }
+//        }
+
+        TgtTicket tgtTicket = getTicket(kdcRep);
+        CredentialCache cCache = new CredentialCache(tgtTicket);
+
+    }
+
+    public static EncryptionKey getClientKey(String accessKeyId, String secret, EncryptionType type) throws KrbException {
+        EncryptionKey clientKey = EncryptionHandler.string2Key(accessKeyId,
+            secret, type);
+        return clientKey;
+    }
+
+    protected static byte[] decryptWithClientKey(EncryptedData data,
+                                          KeyUsage usage, EncryptionKey clientKey) throws KrbException {
+        if (clientKey == null) {
+            throw new KrbException("Client key isn't availalbe");
+        }
+        return EncryptionHandler.decrypt(data, clientKey, usage);
+    }
+
+    public static TgtTicket getTicket(KdcRep kdcRep) {
+        TgtTicket tgtTicket = new TgtTicket(kdcRep.getTicket(),
+            (EncAsRepPart) kdcRep.getEncPart(), kdcRep.getCname());
+        return tgtTicket;
+    }
 }

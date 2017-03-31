@@ -32,6 +32,7 @@ import org.apache.kerby.kerberos.kerb.KrbRuntime;
 import org.apache.kerby.kerberos.kerb.client.KrbContext;
 import org.apache.kerby.kerberos.kerb.common.EncryptionUtil;
 import org.apache.kerby.kerberos.kerb.common.KrbUtil;
+import org.apache.kerby.kerberos.kerb.crypto.EncryptionHandler;
 import org.apache.kerby.kerberos.kerb.server.KdcConfigKey;
 import org.apache.kerby.kerberos.kerb.server.KdcContext;
 import org.apache.kerby.kerberos.kerb.server.KdcRecoverableException;
@@ -41,6 +42,7 @@ import org.apache.kerby.kerberos.kerb.server.request.AsRequest;
 import org.apache.kerby.kerberos.kerb.server.request.KdcRequest;
 import org.apache.kerby.kerberos.kerb.type.KerberosTime;
 import org.apache.kerby.kerberos.kerb.type.base.AuthToken;
+import org.apache.kerby.kerberos.kerb.type.base.EncryptionKey;
 import org.apache.kerby.kerberos.kerb.type.base.EncryptionType;
 import org.apache.kerby.kerberos.kerb.type.base.HostAddress;
 import org.apache.kerby.kerberos.kerb.type.base.HostAddresses;
@@ -172,7 +174,7 @@ public class HASKdcHandler {
         AuthToken authToken = getAuthToken(regionId, accessKeyId, secret, userName);
         KrbMessage krbMessage = null;
         try {
-            krbMessage = handleMessage(authToken);
+            krbMessage = handleMessage(authToken, accessKeyId, secret);
         } catch (KrbException e) {
             e.printStackTrace();
         }
@@ -183,11 +185,23 @@ public class HASKdcHandler {
     /**
      * Process the client request message.
      */
-    public KrbMessage handleMessage(AuthToken authToken) throws KrbException {
+    public KrbMessage handleMessage(AuthToken authToken, String accessKeyId, String secret) throws KrbException {
 
         AsReq asReq = createAsReq(authToken);
         KdcRequest kdcRequest = new AsRequest(asReq, kdcContext);
         kdcRequest.setHttps(true);
+
+        List<EncryptionType> requestedTypes = getEncryptionTypes();
+        EncryptionType bestType = EncryptionUtil.getBestEncryptionType(requestedTypes,
+                kdcContext.getConfig().getEncryptionTypes());
+
+        if (bestType == null) {
+            LOG.error("Can't get the best encryption type.");
+            throw new KrbException(KrbErrorCode.KDC_ERR_ETYPE_NOSUPP);
+        }
+        EncryptionKey clientKey = getClientKey(accessKeyId, secret, bestType);
+        kdcRequest.setClientKey(clientKey);
+
         getKdcServer().getKdcConfig().setString(KdcConfigKey.TOKEN_ISSUERS, "Aliyun");
 
         KrbMessage krbResponse;
@@ -229,6 +243,12 @@ public class HASKdcHandler {
             }
         }
         return krbResponse;
+    }
+
+    public EncryptionKey getClientKey(String accessKeyId, String secret, EncryptionType type) throws KrbException {
+        EncryptionKey clientKey = EncryptionHandler.string2Key(accessKeyId,
+            secret, type);
+        return clientKey;
     }
 
     /**
@@ -350,5 +370,4 @@ public class HASKdcHandler {
         List<EncryptionType> encryptionTypes = krbContext.getConfig().getEncryptionTypes();
         return EncryptionUtil.orderEtypesByStrength(encryptionTypes);
     }
-
 }
