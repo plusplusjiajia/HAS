@@ -26,7 +26,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.kerby.kerberos.kerb.KrbCodec;
 import org.apache.kerby.kerberos.kerb.KrbException;
-import org.apache.kerby.kerberos.kerb.ccache.CredentialCache;
 import org.apache.kerby.kerberos.kerb.crypto.EncryptionHandler;
 import org.apache.kerby.kerberos.kerb.type.base.EncryptedData;
 import org.apache.kerby.kerberos.kerb.type.base.EncryptionKey;
@@ -67,43 +66,59 @@ public class HASClient {
 
 
     public static void main(String[] args) {
+
+        String regionId = "***";
+        String accessKeyId = "***";
+        String secret = "***";
+        String userName = "***";
+
         try {
-            Client client = Client.create();
-            String regionId = "cn-hangzhou";
-            String accessKeyId = "***";
-            String secret = "***";
-            String userName = "***";
-
-            WebResource webResource = client
-                .resource("http://localhost:8091/has/v1/welcome?type=ALIYUN&regionId=" + regionId
-                    + "&accessKeyId=" + accessKeyId
-                    + "&secret=" + secret
-                    + "&userName=" + userName);
-
-            ClientResponse response = webResource.accept("application/json")
-                .get(ClientResponse.class);
-
-            if (response.getStatus() != 200) {
-                throw new RuntimeException("Failed : HTTP error code : "
-                    + response.getStatus());
-            }
-            if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
-
-                JSONObject json = response.getEntity(JSONObject.class);
-
-
-                System.out.println("Output from Server .... \n");
-                System.out.println(json);
-
-                handleResponse(json, accessKeyId, secret);
-
-            } else {
-                System.out.println("ERROR! " + response.getStatus());
-                System.out.println(response.getEntity(String.class));
-            }
-
-        } catch (Exception e) {
+            TgtTicket tgtTicket = requestTgt(regionId, accessKeyId, secret, userName);
+        } catch (KrbException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Request a TGT with user token credential and armor cache
+     * @param regionId
+     * @param accessKeyId
+     * @param secret
+     * @param userName
+     * @return TGT
+     * @throws KrbException e
+     */
+    public static TgtTicket requestTgt(String regionId, String accessKeyId,
+                                       String secret, String userName) throws KrbException {
+
+        Client client = Client.create();
+        WebResource webResource = client
+            .resource("http://localhost:8091/has/v1/welcome?type=ALIYUN&regionId=" + regionId
+                + "&accessKeyId=" + accessKeyId
+                + "&secret=" + secret
+                + "&userName=" + userName);
+
+        ClientResponse response = webResource.accept("application/json")
+            .get(ClientResponse.class);
+
+        if (response.getStatus() != 200) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                + response.getStatus());
+        }
+        if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
+
+            JSONObject json = response.getEntity(JSONObject.class);
+
+
+            System.out.println("Output from Server .... \n");
+            System.out.println(json);
+
+            return handleResponse(json, accessKeyId, secret);
+
+        } else {
+            System.out.println("ERROR! " + response.getStatus());
+            System.out.println(response.getEntity(String.class));
+            return null;
         }
     }
 
@@ -141,12 +156,13 @@ public class HASClient {
         return null;
     }
 
-    public static void handleResponse(JSONObject json, String accessKeyId, String secret) throws KrbException {
+    public static TgtTicket handleResponse(JSONObject json, String accessKeyId, String secret)
+        throws KrbException {
         KrbMessage kdcRep = getKrbMessage(json);
 
         KrbMessageType messageType = kdcRep.getMsgType();
         if (messageType == KrbMessageType.AS_REP) {
-            processResponse((KdcRep) kdcRep, accessKeyId, secret);
+            return processResponse((KdcRep) kdcRep, accessKeyId, secret);
         } else if (messageType == KrbMessageType.TGS_REP) {
             // TODO
         } else if (messageType == KrbMessageType.KRB_ERROR) {
@@ -156,9 +172,11 @@ public class HASClient {
 
             throw new KrbException(error.getErrorCode(), error.getEtext());
         }
+        return null;
     }
 
-    public static void processResponse(KdcRep kdcRep, String accessKeyId, String secret) throws KrbException {
+    public static TgtTicket processResponse(KdcRep kdcRep, String accessKeyId, String secret)
+        throws KrbException {
 
         System.out.print("as rep: " + kdcRep.getCname());
 
@@ -209,7 +227,8 @@ public class HASClient {
 //        }
 
         TgtTicket tgtTicket = getTicket(kdcRep);
-        CredentialCache cCache = new CredentialCache(tgtTicket);
+//        CredentialCache cCache = new CredentialCache(tgtTicket);
+        return tgtTicket;
 
     }
 
