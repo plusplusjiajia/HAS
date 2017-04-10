@@ -29,8 +29,12 @@ import org.apache.hadoop.has.webserver.resources.ReginIdParam;
 import org.apache.hadoop.has.webserver.resources.SecretParam;
 import org.apache.hadoop.has.webserver.resources.TypeParam;
 import org.apache.hadoop.has.webserver.resources.UserNameParam;
+import org.apache.hadoop.has.webserver.resources.ClientsParam;
 import org.apache.hadoop.http.JettyUtils;
+import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.type.base.KrbMessage;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
@@ -43,7 +47,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -86,14 +92,16 @@ public class HASWebMethods {
            @QueryParam(SecretParam.NAME) @DefaultValue(SecretParam.DEFAULT)
         final SecretParam secret,
            @QueryParam(UserNameParam.NAME) @DefaultValue(UserNameParam.DEFAULT)
-        final UserNameParam userName
+        final UserNameParam userName,
+           @QueryParam(ClientsParam.NAME) @DefaultValue(ClientsParam.DEFAULT)
+        final ClientsParam clients
     ) {
         return put(type.getValue(), reginId.getValue(), accessKeyId.getValue(),
-            secret.getValue(), userName.getValue());
+            secret.getValue(), userName.getValue(),clients.getValue());
     }
 
     private Response put(AuthType type, String regionId, String accessKeyId, String secret,
-                         String userName) {
+                         String userName,String clients) {
         final HASKdcServer kdcServer = (HASKdcServer) context.getAttribute("kdcserver");
         switch (type) {
             case ALIYUN: {
@@ -128,9 +136,27 @@ public class HASWebMethods {
                         e.printStackTrace();
                     }
                     return Response.ok(js).type(MediaType.APPLICATION_JSON).build();
-
                 }
                 else {
+                    return Response.serverError().build();
+                }
+            }
+            case HDFS:{
+                if (clients != null){
+                    File file;
+                    try {
+                        JSONObject jb = new JSONObject(clients).getJSONObject("HDFS");
+                        file = kdcServer.getKeytab(jb.getString("NameNode"),jb.getString("DataNode"));
+                        return Response.ok(file).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
+                    }
+                    catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    catch (KrbException e){
+                        e.printStackTrace();
+                    }
+                    return Response.serverError().build();
+                }else{
                     return Response.serverError().build();
                 }
             }

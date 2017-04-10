@@ -34,6 +34,7 @@ import org.apache.kerby.util.OSUtil;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.util.Map;
 
 /**
  * The HAS KDC server implementation.
@@ -88,7 +89,16 @@ public class HASKdcServer extends KdcServer {
 
         kadmin.addPrincipal("hdfs1");
     }
-
+    public File getKeytab (String nameNode,String dataNodeStr) throws KrbException{
+        LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
+        File keytabFile = new File("/etc/hadoop/conf/"+nameNode+".keytab");
+        String[] dataNodes = dataNodeStr.split(",");
+        for (String dataNode:dataNodes) {
+            kadmin.addPrincipal(dataNode+"/"+nameNode+"localhost@HADOOP.COM");
+            kadmin.exportKeytab(keytabFile,dataNode+"/"+nameNode+"localhost@HADOOP.COM");
+        }
+        return keytabFile;
+    }
     private static final String USAGE = (OSUtil.isWindows()
             ? "Usage: bin\\start-kdc.cmd" : "Usage: sh bin/start-kdc.sh")
             + " <conf-dir> <working-dir> \n"
