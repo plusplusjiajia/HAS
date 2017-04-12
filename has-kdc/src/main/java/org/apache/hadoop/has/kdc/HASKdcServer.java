@@ -89,7 +89,7 @@ public class HASKdcServer extends KdcServer {
 
         kadmin.addPrincipal("hdfs1");
     }
-    public File getKeytab (String nameNode,String dataNodeStr) throws KrbException{
+    public void getKeytab (String nameNode,String dataNodeStr) throws KrbException{
         LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
         File keytabFile = new File("/etc/hadoop/conf/"+nameNode+".keytab");
         String[] dataNodes = dataNodeStr.split(",");
@@ -97,7 +97,6 @@ public class HASKdcServer extends KdcServer {
             kadmin.addPrincipal(dataNode+"/"+nameNode+"localhost@HADOOP.COM");
             kadmin.exportKeytab(keytabFile,dataNode+"/"+nameNode+"localhost@HADOOP.COM");
         }
-        return keytabFile;
     }
     private static final String USAGE = (OSUtil.isWindows()
             ? "Usage: bin\\start-kdc.cmd" : "Usage: sh bin/start-kdc.sh")

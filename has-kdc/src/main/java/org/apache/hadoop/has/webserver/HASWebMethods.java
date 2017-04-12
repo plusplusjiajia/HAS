@@ -24,12 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.has.kdc.HASKdcHandler;
 import org.apache.hadoop.has.kdc.HASKdcServer;
-import org.apache.hadoop.has.webserver.resources.AccessKeyIdParam;
-import org.apache.hadoop.has.webserver.resources.ReginIdParam;
-import org.apache.hadoop.has.webserver.resources.SecretParam;
-import org.apache.hadoop.has.webserver.resources.TypeParam;
-import org.apache.hadoop.has.webserver.resources.UserNameParam;
-import org.apache.hadoop.has.webserver.resources.ClientsParam;
+import org.apache.hadoop.has.webserver.resources.*;
 import org.apache.hadoop.http.JettyUtils;
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.type.base.KrbMessage;
@@ -37,19 +32,13 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import javax.servlet.ServletContext;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -63,11 +52,23 @@ public class HASWebMethods {
 
     private @Context ServletContext context;
 
-//    @GET
-//    @Produces(MediaType.TEXT_PLAIN)
-//    public String get() {
-//        return "get Welcome to Jersey world";
-//    }
+    /**
+     *
+     * @param nameNode
+     * @return nameNode.keytab
+     */
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response get(@QueryParam(NameNodeParam.NAME) @DefaultValue(NameNodeParam.DEFAULT)
+                          final NameNodeParam nameNode) throws Exception {
+        if (nameNode.getValue()!=null){
+            File file = new File("/etc/hadoop/conf/"+nameNode.getValue()+".keytab");
+            if (file.exists()){
+                return Response.ok(file).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
+            }
+        }
+        return Response.serverError().build();
+    }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -79,7 +80,7 @@ public class HASWebMethods {
     /**
      * Handle HTTP PUT request.
      */
-    @GET
+    @PUT
     @Produces({MediaType.APPLICATION_OCTET_STREAM + "; " + JettyUtils.UTF_8,
         MediaType.APPLICATION_JSON + "; " + JettyUtils.UTF_8})
     public Response put(
@@ -143,11 +144,11 @@ public class HASWebMethods {
             }
             case HDFS:{
                 if (clients != null){
-                    File file;
                     try {
                         JSONObject jb = new JSONObject(clients).getJSONObject("HDFS");
-                        file = kdcServer.getKeytab(jb.getString("NameNode"),jb.getString("DataNode"));
-                        return Response.ok(file).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
+                        kdcServer.getKeytab(jb.getString("NameNode"),jb.getString("DataNode"));
+                        return Response.ok("SUCCESS").type(MediaType.TEXT_PLAIN).build();
+
                     }
                     catch (JSONException e) {
                         e.printStackTrace();
