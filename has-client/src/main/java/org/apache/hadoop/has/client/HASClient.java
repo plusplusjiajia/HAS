@@ -43,12 +43,15 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import javax.ws.rs.core.Response;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 public class HASClient {
     public static final Log LOG = LogFactory.getLog(HASClient.class);
 
+      public static final String AK_ENV_NAME = "AK_CONFIG";
 
 
 //    protected TgtTicket doRequestTgt(AsRequest tgtTktReq) throws KrbException {
@@ -67,17 +70,27 @@ public class HASClient {
 
     public static void main(String[] args) {
 
-        String regionId = "***";
-        String accessKeyId = "***";
-        String secret = "***";
-        String userName = "***";
-
+        System.setProperty(AK_ENV_NAME, "/home/ak.conf");
         try {
-            TgtTicket tgtTicket = requestTgt(regionId, accessKeyId, secret, userName);
+            TgtTicket tgtTicket = requestTgt();
         } catch (KrbException e) {
             e.printStackTrace();
         }
     }
+
+    public static TgtTicket requestTgt() throws KrbException {
+        String pathName = System.getProperty(AK_ENV_NAME);
+        LOG.info("&&& ak path:"+pathName);
+        File confDir= new File(pathName);
+        AKConfig ak = getAKConfig(confDir);
+        String regionId = ak.getString("regionId");
+        String accessKeyId = ak.getString("accessKeyId");
+        String secret = ak.getString("secret");
+        String userName = ak.getString("userName");
+
+        return requestTgt(regionId, accessKeyId, secret, userName);
+    }
+
 
     /**
      * Request a TGT with user token credential and armor cache
@@ -250,5 +263,27 @@ public class HASClient {
         TgtTicket tgtTicket = new TgtTicket(kdcRep.getTicket(),
             (EncAsRepPart) kdcRep.getEncPart(), kdcRep.getCname());
         return tgtTicket;
+    }
+
+    /**
+     * Get AK configuration
+     *
+     * @param akConfigFile configuration file
+     * @return backend configuration
+     * @throws sun.security.krb5.KrbException e.
+     */
+    public static AKConfig getAKConfig(File akConfigFile) throws KrbException {
+        if (akConfigFile.exists()) {
+            AKConfig akConfig = new AKConfig();
+            try {
+                akConfig.addIniConfig(akConfigFile);
+            } catch (IOException e) {
+                throw new KrbException("Can not load the ak configuration file "
+                    + akConfigFile.getAbsolutePath());
+            }
+            return akConfig;
+        } else {
+             throw new KrbException("Should set the ak.conf");
+        }
     }
 }

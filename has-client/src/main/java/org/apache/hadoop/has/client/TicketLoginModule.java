@@ -19,6 +19,8 @@
  */
 package org.apache.hadoop.has.client;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.kerby.kerberos.kerb.ccache.Credential;
 import org.apache.kerby.kerberos.kerb.type.ticket.TgtTicket;
 import sun.misc.HexDumpEncoder;
@@ -56,6 +58,8 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 public class TicketLoginModule implements LoginModule {
+
+      public static final Log LOG = LogFactory.getLog(TicketLoginModule.class);
     // initial state
     private Subject subject;
     private CallbackHandler callbackHandler;
@@ -333,18 +337,17 @@ public class TicketLoginModule implements LoginModule {
         }
 
         try {
+
             if (useTgtTicket) {
+
+                LOG.info("use tgt ticket##");
+
                 if (debug)
                     System.out.println("Acquire TGT TICKET...");
-
-                String regionId = "***";
-                String accessKeyId = "***";
-                String secret = "***";
-                String userName = "***";
-
                 TgtTicket tgtTicket = null;
                 try {
-                    tgtTicket = HASClient.requestTgt(regionId, accessKeyId, secret, userName);
+                    System.setProperty(HASClient.AK_ENV_NAME, "/home/ak.conf");
+                    tgtTicket = HASClient.requestTgt();
                 } catch (org.apache.kerby.kerberos.kerb.KrbException e) {
                     e.printStackTrace();
                 }
@@ -365,9 +368,22 @@ public class TicketLoginModule implements LoginModule {
                     credential.getEndTime().getValue(),
                     credential.getRenewTill().getValue(),
                     null);
-            }
 
-            if (useTicketCache) {
+                if (cred != null) {
+                   // get the principal name from the ticket cache
+                   if (principal == null) {
+                        principal = cred.getClient();
+                   }
+                }
+                if (debug) {
+                    System.out.println("Principal is " + principal);
+                    if (cred == null) {
+                        System.out.println
+                            ("null credentials from Ticket Cache");
+                    }
+                }
+            } else if (useTicketCache) {
+                LOG.info("use ticket cache!!!!!");
                 // ticketCacheName == null implies the default cache
                 if (debug)
                     System.out.println("Acquire TGT from Cache");
@@ -437,6 +453,7 @@ public class TicketLoginModule implements LoginModule {
                  * (encKeys == null) to check.
                  */
                 if (useKeyTab) {
+                    LOG.info("use keytab");
                     if (!unboundServer) {
                         KerberosPrincipal kp =
                                 new KerberosPrincipal(principal.getName());
@@ -657,7 +674,7 @@ public class TicketLoginModule implements LoginModule {
 
     private void validateConfiguration() throws LoginException {
         if (doNotPrompt && !useTicketCache && !useKeyTab
-                && !tryFirstPass && !useFirstPass)
+                && !tryFirstPass && !useFirstPass && !useTgtTicket)
             throw new LoginException
                 ("Configuration Error"
                  + " - either doNotPrompt should be "
@@ -756,6 +773,13 @@ public class TicketLoginModule implements LoginModule {
          * private credentials. The credentials are of type
          * KerberosKey or KerberosTicket
          */
+
+              StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+                for(StackTraceElement element : stackTraceElements) {
+                    LOG.info("###!!stackTrace: " + element);
+                }
+        LOG.info("success"+succeeded);
+
         if (succeeded == false) {
             return false;
         } else {

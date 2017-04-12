@@ -145,6 +145,8 @@ public class HASKdcHandler {
 
         AuthToken authToken = KrbRuntime.getTokenProvider().createTokenFactory().createToken();
         authToken.setIssuer("Aliyun");
+//        //TODO get the host name from  conf
+//        String username = response.getUser().getUserName() + "/" + "localhost";
         authToken.setSubject(response.getUser().getUserName());
         List<String> auds = new ArrayList<String>();
         String audience = getAudience("krbtgt");
