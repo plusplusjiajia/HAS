@@ -15,15 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.has.webserver;
+package org.apache.hadoop.has.webserver.resources;
 
-import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.classification.InterfaceStability;
+public class ClientsParam extends StringParam {
+      /** Parameter name. */
+  public static final String NAME = "clients";
+  /** Default parameter value. */
+  public static final String DEFAULT = "";
 
-@InterfaceAudience.Public
-@InterfaceStability.Stable
-public enum AuthType {
-  ALIYUN,
-  HDFS,
-  NULL;
+  private static final Domain DOMAIN = new Domain(NAME, null);
+
+  /**
+   * Constructor.
+   * @param str a string representation of the parameter value.
+   */
+  public ClientsParam(final String str) {
+    super(DOMAIN, str == null || str.equals(DEFAULT)? null: str);
+  }
+
+  @Override
+  public String getName() {
+    return NAME;
+  }
 }
