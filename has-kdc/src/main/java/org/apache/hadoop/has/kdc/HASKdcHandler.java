@@ -191,7 +191,7 @@ public class HASKdcHandler {
 
         AsReq asReq = createAsReq(authToken);
         KdcRequest kdcRequest = new AsRequest(asReq, kdcContext);
-//        kdcRequest.setHttps(true);
+        kdcRequest.setHttps(true);
 
         List<EncryptionType> requestedTypes = getEncryptionTypes();
         EncryptionType bestType = EncryptionUtil.getBestEncryptionType(requestedTypes,
