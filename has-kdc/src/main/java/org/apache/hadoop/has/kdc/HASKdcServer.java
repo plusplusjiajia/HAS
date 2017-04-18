@@ -139,6 +139,6 @@ public class HASKdcServer extends KdcServer {
         server.start();
 
         System.out.println("HAS KDC server started.");
-        System.out.println("port: " + server.getKrbSetting().getKdcHost());
+        System.out.println("port: " + server.getKrbSetting().getKdcTcpPort());
     }
 }

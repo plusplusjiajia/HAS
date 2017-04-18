@@ -68,17 +68,7 @@ public class HASClient {
 //    }
 
 
-    public static void main(String[] args) {
-
-        System.setProperty(AK_ENV_NAME, "/home/ak.conf");
-        try {
-            TgtTicket tgtTicket = requestTgt();
-        } catch (KrbException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static TgtTicket requestTgt() throws KrbException {
+    public TgtTicket requestTgt() throws KrbException {
         String pathName = System.getProperty(AK_ENV_NAME);
         LOG.info("&&& ak path:"+pathName);
         File confDir= new File(pathName);
@@ -101,7 +91,7 @@ public class HASClient {
      * @return TGT
      * @throws KrbException e
      */
-    public static TgtTicket requestTgt(String regionId, String accessKeyId,
+    public TgtTicket requestTgt(String regionId, String accessKeyId,
                                        String secret, String userName) throws KrbException {
 
         Client client = Client.create();
@@ -135,7 +125,7 @@ public class HASClient {
         }
     }
 
-    public static KrbMessage getKrbMessage(JSONObject json) throws KrbException {
+    public KrbMessage getKrbMessage(JSONObject json) throws KrbException {
         try {
             String type = json.getString("type");
             if (type.equals("ALIYUN")) {
@@ -169,7 +159,7 @@ public class HASClient {
         return null;
     }
 
-    public static TgtTicket handleResponse(JSONObject json, String accessKeyId, String secret)
+    public TgtTicket handleResponse(JSONObject json, String accessKeyId, String secret)
         throws KrbException {
         KrbMessage kdcRep = getKrbMessage(json);
 
@@ -188,7 +178,7 @@ public class HASClient {
         return null;
     }
 
-    public static TgtTicket processResponse(KdcRep kdcRep, String accessKeyId, String secret)
+    public TgtTicket processResponse(KdcRep kdcRep, String accessKeyId, String secret)
         throws KrbException {
 
         System.out.print("as rep: " + kdcRep.getCname());
@@ -245,13 +235,13 @@ public class HASClient {
 
     }
 
-    public static EncryptionKey getClientKey(String accessKeyId, String secret, EncryptionType type) throws KrbException {
+    public EncryptionKey getClientKey(String accessKeyId, String secret, EncryptionType type) throws KrbException {
         EncryptionKey clientKey = EncryptionHandler.string2Key(accessKeyId,
             secret, type);
         return clientKey;
     }
 
-    protected static byte[] decryptWithClientKey(EncryptedData data,
+    protected byte[] decryptWithClientKey(EncryptedData data,
                                           KeyUsage usage, EncryptionKey clientKey) throws KrbException {
         if (clientKey == null) {
             throw new KrbException("Client key isn't availalbe");
@@ -259,7 +249,7 @@ public class HASClient {
         return EncryptionHandler.decrypt(data, clientKey, usage);
     }
 
-    public static TgtTicket getTicket(KdcRep kdcRep) {
+    public TgtTicket getTicket(KdcRep kdcRep) {
         TgtTicket tgtTicket = new TgtTicket(kdcRep.getTicket(),
             (EncAsRepPart) kdcRep.getEncPart(), kdcRep.getCname());
         return tgtTicket;
@@ -272,7 +262,7 @@ public class HASClient {
      * @return backend configuration
      * @throws sun.security.krb5.KrbException e.
      */
-    public static AKConfig getAKConfig(File akConfigFile) throws KrbException {
+    public AKConfig getAKConfig(File akConfigFile) throws KrbException {
         if (akConfigFile.exists()) {
             AKConfig akConfig = new AKConfig();
             try {

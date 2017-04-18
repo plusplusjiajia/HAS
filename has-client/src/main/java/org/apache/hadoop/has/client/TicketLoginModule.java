@@ -347,7 +347,8 @@ public class TicketLoginModule implements LoginModule {
                 TgtTicket tgtTicket = null;
                 try {
                     System.setProperty(HASClient.AK_ENV_NAME, "/home/ak.conf");
-                    tgtTicket = HASClient.requestTgt();
+                    HASClient hasClient = new HASClient();
+                    tgtTicket = hasClient.requestTgt();
                 } catch (org.apache.kerby.kerberos.kerb.KrbException e) {
                     e.printStackTrace();
                 }
