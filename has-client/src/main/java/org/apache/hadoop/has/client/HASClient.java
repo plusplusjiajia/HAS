@@ -102,7 +102,7 @@ public class HASClient {
                 + "&userName=" + userName);
 
         ClientResponse response = webResource.accept("application/json")
-            .get(ClientResponse.class);
+            .put(ClientResponse.class);
 
         if (response.getStatus() != 200) {
             throw new RuntimeException("Failed : HTTP error code : "
