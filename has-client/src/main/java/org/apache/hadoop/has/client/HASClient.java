@@ -50,28 +50,12 @@ import java.util.Map;
 
 public class HASClient {
     public static final Log LOG = LogFactory.getLog(HASClient.class);
-
-      public static final String AK_ENV_NAME = "AK_CONFIG";
-
-
-//    protected TgtTicket doRequestTgt(AsRequest tgtTktReq) throws KrbException {
-//        doRequest(tgtTktReq);
-//
-//        return tgtTktReq.getTicket();
-//    }
-//
-//    public void send(String regionId, String accessKeyId, String secret, String userName) {
-//
-//        // send the AK to HAS KDC
-//
-//
-//    }
-
+    public static final String AK_ENV_NAME = "AK_CONFIG";
 
     public TgtTicket requestTgt() throws KrbException {
         String pathName = System.getProperty(AK_ENV_NAME);
-        LOG.info("&&& ak path:"+pathName);
-        File confDir= new File(pathName);
+        LOG.info("&&& ak path:" + pathName);
+        File confDir = new File(pathName);
         AKConfig ak = getAKConfig(confDir);
         String regionId = ak.getString("regionId");
         String accessKeyId = ak.getString("accessKeyId");
@@ -80,7 +64,6 @@ public class HASClient {
 
         return requestTgt(regionId, accessKeyId, secret, userName);
     }
-
 
     /**
      * Request a TGT with user token credential and armor cache
@@ -93,7 +76,6 @@ public class HASClient {
      */
     public TgtTicket requestTgt(String regionId, String accessKeyId,
                                        String secret, String userName) throws KrbException {
-
         Client client = Client.create();
         WebResource webResource = client
             .resource("http://localhost:8091/has/v1/welcome?type=ALIYUN&regionId=" + regionId
@@ -111,7 +93,6 @@ public class HASClient {
         if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
 
             JSONObject json = response.getEntity(JSONObject.class);
-
 
             System.out.println("Output from Server .... \n");
             System.out.println(json);
@@ -132,25 +113,14 @@ public class HASClient {
                 String krbMessageString = json.getString("krbMessage");
                 Base64 base64 = new Base64(0);
                 byte[] krbMessage = base64.decode(krbMessageString);
-
                 ByteBuffer byteBuffer = ByteBuffer.wrap(krbMessage);
                 KrbMessage kdcRep;
-
                 try {
                     kdcRep = KrbCodec.decodeMessage(byteBuffer);
                 } catch (IOException e) {
                     throw new KrbException("Krb decoding message failed", e);
                 }
                 return kdcRep;
-
-//                AsRep asRep = new AsRep();
-//                try {
-//                    asRep.decode(krbMessage);
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//                return asRep;
-
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -187,7 +157,8 @@ public class HASClient {
         String clientRealm = kdcRep.getCrealm();
         clientPrincipal.setRealm(clientRealm);
 
-        EncryptionKey clientKey = getClientKey(accessKeyId, secret, kdcRep.getEncryptedEncPart().getEType());
+        EncryptionKey clientKey = getClientKey(clientPrincipal.getName(), accessKeyId, secret,
+            kdcRep.getEncryptedEncPart().getEType());
 
         byte[] decryptedData = decryptWithClientKey(kdcRep.getEncryptedEncPart(),
                 KeyUsage.AS_REP_ENCPART, clientKey);
@@ -235,9 +206,10 @@ public class HASClient {
 
     }
 
-    public EncryptionKey getClientKey(String accessKeyId, String secret, EncryptionType type) throws KrbException {
-        EncryptionKey clientKey = EncryptionHandler.string2Key(accessKeyId,
-            secret, type);
+    public EncryptionKey getClientKey(String userName, String accessKeyId, String secret,
+                                      EncryptionType type) throws KrbException {
+        EncryptionKey clientKey = EncryptionHandler.string2Key(userName,
+            accessKeyId + secret, type);
         return clientKey;
     }
 
@@ -259,7 +231,7 @@ public class HASClient {
      * Get AK configuration
      *
      * @param akConfigFile configuration file
-     * @return backend configuration
+     * @return ak configuration
      * @throws sun.security.krb5.KrbException e.
      */
     public AKConfig getAKConfig(File akConfigFile) throws KrbException {

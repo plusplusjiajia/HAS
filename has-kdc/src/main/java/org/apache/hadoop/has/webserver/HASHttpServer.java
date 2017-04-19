@@ -79,20 +79,16 @@ public class HASHttpServer {
   /**
    * Return a HttpServer.Builder that the ssm can use to
    * initialize their HTTP / HTTPS server.
-   *
    */
   public static HttpServer2.Builder httpServerTemplateForHAS(
           Configuration conf, final InetSocketAddress httpAddr,
           final InetSocketAddress httpsAddr, String name) throws IOException {
     HttpConfig.Policy policy = getHttpPolicy(conf);
-
     HttpServer2.Builder builder = new HttpServer2.Builder().setName(name);
-
     if (policy.isHttpEnabled()) {
       if (httpAddr.getPort() == 0) {
         builder.setFindPort(true);
       }
-
       URI uri = URI.create("http://" + NetUtils.getHostPortString(httpAddr));
       builder.addEndpoint(uri);
       LOG.info("Starting Web-server for " + name + " at: " + uri);
@@ -121,28 +117,28 @@ public class HASHttpServer {
     Configuration sslConf = new Configuration(false);
 
     sslConf.addResource(conf.get(
-        HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY,
-        HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_DEFAULT));
+        HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY,
+        HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_RESOURCE_DEFAULT));
 
     final String[] reqSslProps = {
-        HASConfigKeys.DFS_SERVER_HTTPS_TRUSTSTORE_LOCATION_KEY,
-        HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_LOCATION_KEY,
-        HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY,
-        HASConfigKeys.DFS_SERVER_HTTPS_KEYPASSWORD_KEY
+        HASConfigKeys.HAS_SERVER_HTTPS_TRUSTSTORE_LOCATION_KEY,
+        HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_LOCATION_KEY,
+        HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY,
+        HASConfigKeys.HAS_SERVER_HTTPS_KEYPASSWORD_KEY
     };
 
     // Check if the required properties are included
     for (String sslProp : reqSslProps) {
       if (sslConf.get(sslProp) == null) {
         LOG.warn("SSL config " + sslProp + " is missing. If " +
-            HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY +
+            HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY +
             " is specified, make sure it is a relative path");
       }
     }
 
-    boolean requireClientAuth = conf.getBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY,
-        HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_DEFAULT);
-    sslConf.setBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY, requireClientAuth);
+    boolean requireClientAuth = conf.getBoolean(HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_KEY,
+        HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_DEFAULT);
+    sslConf.setBoolean(HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_KEY, requireClientAuth);
     return sslConf;
   }
 
@@ -150,14 +146,14 @@ public class HASHttpServer {
                                                                    Configuration sslConf) {
     return builder
         .needsClientAuth(
-            sslConf.getBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY,
-                HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_DEFAULT))
-        .keyPassword(getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_KEYPASSWORD_KEY))
+            sslConf.getBoolean(HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_KEY,
+                HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_DEFAULT))
+        .keyPassword(getPassword(sslConf, HASConfigKeys.HAS_SERVER_HTTPS_KEYPASSWORD_KEY))
         .keyStore(sslConf.get("ssl.server.keystore.location"),
-            getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY),
+            getPassword(sslConf, HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY),
             sslConf.get("ssl.server.keystore.type", "jks"))
         .trustStore(sslConf.get("ssl.server.truststore.location"),
-            getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_TRUSTSTORE_PASSWORD_KEY),
+            getPassword(sslConf, HASConfigKeys.HAS_SERVER_HTTPS_TRUSTSTORE_PASSWORD_KEY),
             sslConf.get("ssl.server.truststore.type", "jks"))
         .excludeCiphers(
             sslConf.get("ssl.server.exclude.cipher.list"));

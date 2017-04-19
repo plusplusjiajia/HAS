@@ -192,7 +192,6 @@ public class HASKdcHandler {
         AsReq asReq = createAsReq(authToken);
         KdcRequest kdcRequest = new AsRequest(asReq, kdcContext);
         kdcRequest.setHttps(true);
-
         List<EncryptionType> requestedTypes = getEncryptionTypes();
         EncryptionType bestType = EncryptionUtil.getBestEncryptionType(requestedTypes,
                 kdcContext.getConfig().getEncryptionTypes());
@@ -201,7 +200,16 @@ public class HASKdcHandler {
             LOG.error("Can't get the best encryption type.");
             throw new KrbException(KrbErrorCode.KDC_ERR_ETYPE_NOSUPP);
         }
-        EncryptionKey clientKey = getClientKey(accessKeyId, secret, bestType);
+
+        PrincipalName clientPrincipal = new PrincipalName(authToken.getSubject());
+        String clientRealm = asReq.getReqBody().getRealm();
+        if (clientRealm == null || clientRealm.isEmpty()) {
+            clientRealm = getKdcContext().getKdcRealm();
+        }
+        clientPrincipal.setRealm(clientRealm);
+
+        EncryptionKey clientKey = getClientKey(clientPrincipal.getName(),
+            accessKeyId, secret, bestType);
         kdcRequest.setClientKey(clientKey);
 
         getKdcServer().getKdcConfig().setString(KdcConfigKey.TOKEN_ISSUERS, "Aliyun");
@@ -247,9 +255,10 @@ public class HASKdcHandler {
         return krbResponse;
     }
 
-    public EncryptionKey getClientKey(String accessKeyId, String secret, EncryptionType type) throws KrbException {
-        EncryptionKey clientKey = EncryptionHandler.string2Key(accessKeyId,
-            secret, type);
+    public EncryptionKey getClientKey(String userName, String accessKeyId, String secret,
+                                      EncryptionType type) throws KrbException {
+        EncryptionKey clientKey = EncryptionHandler.string2Key(userName,
+            accessKeyId + secret, type);
         return clientKey;
     }
 

@@ -77,7 +77,7 @@ public class HttpKdcServerImpl extends NettyKdcServerImpl {
     protected void doStart() throws Exception {
         super.doStart();
 
-        jettyStart();
+        startJettyServer();
 
         LOG.info("Http kdc server started.");
     }
@@ -155,28 +155,28 @@ public class HttpKdcServerImpl extends NettyKdcServerImpl {
         Configuration sslConf = new Configuration(false);
 
         sslConf.addResource(conf.get(
-            HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY,
-            HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_DEFAULT));
+            HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY,
+            HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_RESOURCE_DEFAULT));
 
         final String[] reqSslProps = {
-            HASConfigKeys.DFS_SERVER_HTTPS_TRUSTSTORE_LOCATION_KEY,
-            HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_LOCATION_KEY,
-            HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY,
-            HASConfigKeys.DFS_SERVER_HTTPS_KEYPASSWORD_KEY
+            HASConfigKeys.HAS_SERVER_HTTPS_TRUSTSTORE_LOCATION_KEY,
+            HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_LOCATION_KEY,
+            HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY,
+            HASConfigKeys.HAS_SERVER_HTTPS_KEYPASSWORD_KEY
         };
 
         // Check if the required properties are included
         for (String sslProp : reqSslProps) {
             if (sslConf.get(sslProp) == null) {
                 LOG.warn("SSL config " + sslProp + " is missing. If " +
-                    HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY +
+                    HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY +
                     " is specified, make sure it is a relative path");
             }
         }
 
-        boolean requireClientAuth = conf.getBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY,
-            HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_DEFAULT);
-        sslConf.setBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY, requireClientAuth);
+        boolean requireClientAuth = conf.getBoolean(HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_KEY,
+            HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_DEFAULT);
+        sslConf.setBoolean(HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_KEY, requireClientAuth);
         return sslConf;
     }
 
@@ -184,14 +184,14 @@ public class HttpKdcServerImpl extends NettyKdcServerImpl {
                                                                      Configuration sslConf) {
         return builder
             .needsClientAuth(
-                sslConf.getBoolean(HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY,
-                    HASConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_DEFAULT))
-            .keyPassword(getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_KEYPASSWORD_KEY))
+                sslConf.getBoolean(HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_KEY,
+                    HASConfigKeys.HAS_CLIENT_HTTPS_NEED_AUTH_DEFAULT))
+            .keyPassword(getPassword(sslConf, HASConfigKeys.HAS_SERVER_HTTPS_KEYPASSWORD_KEY))
             .keyStore(sslConf.get("ssl.server.keystore.location"),
-                getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY),
+                getPassword(sslConf, HASConfigKeys.HAS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY),
                 sslConf.get("ssl.server.keystore.type", "jks"))
             .trustStore(sslConf.get("ssl.server.truststore.location"),
-                getPassword(sslConf, HASConfigKeys.DFS_SERVER_HTTPS_TRUSTSTORE_PASSWORD_KEY),
+                getPassword(sslConf, HASConfigKeys.HAS_SERVER_HTTPS_TRUSTSTORE_PASSWORD_KEY),
                 sslConf.get("ssl.server.truststore.type", "jks"))
             .excludeCiphers(
                 sslConf.get("ssl.server.exclude.cipher.list"));
@@ -226,7 +226,7 @@ public class HttpKdcServerImpl extends NettyKdcServerImpl {
      * for information related to the different configuration options and
      * Http Policy is decided.
      */
-    private void jettyStart() throws IOException {
+    private void startJettyServer() throws IOException {
 
         HttpConfig.Policy policy = getHttpPolicy(conf);
         final String infoHost = bindAddress.getHostName();

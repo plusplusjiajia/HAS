@@ -40,13 +40,13 @@ public class HASConfigKeys extends CommonConfigurationKeys {
   public static final int     HAS_HTTPS_DEFAULT_PORT = 9865;
   public static final String  HAS_HTTPS_ADDRESS_DEFAULT = "0.0.0.0:" + HAS_HTTPS_DEFAULT_PORT;
 
-  public static final String  DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY = "dfs.https.server.keystore.resource";
-  public static final String  DFS_SERVER_HTTPS_KEYSTORE_RESOURCE_DEFAULT = "ssl-server.xml";
-  public static final String  DFS_SERVER_HTTPS_KEYPASSWORD_KEY = "ssl.server.keystore.keypassword";
-  public static final String  DFS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY = "ssl.server.keystore.password";
-  public static final String  DFS_SERVER_HTTPS_KEYSTORE_LOCATION_KEY = "ssl.server.keystore.location";
-  public static final String  DFS_SERVER_HTTPS_TRUSTSTORE_LOCATION_KEY = "ssl.server.truststore.location";
-  public static final String  DFS_SERVER_HTTPS_TRUSTSTORE_PASSWORD_KEY = "ssl.server.truststore.password";
-  public static final String  DFS_CLIENT_HTTPS_NEED_AUTH_KEY = "dfs.client.https.need-auth";
-  public static final boolean DFS_CLIENT_HTTPS_NEED_AUTH_DEFAULT = false;
+  public static final String  HAS_SERVER_HTTPS_KEYSTORE_RESOURCE_KEY = "has.https.server.keystore.resource";
+  public static final String  HAS_SERVER_HTTPS_KEYSTORE_RESOURCE_DEFAULT = "ssl-server.xml";
+  public static final String  HAS_SERVER_HTTPS_KEYPASSWORD_KEY = "ssl.server.keystore.keypassword";
+  public static final String  HAS_SERVER_HTTPS_KEYSTORE_PASSWORD_KEY = "ssl.server.keystore.password";
+  public static final String  HAS_SERVER_HTTPS_KEYSTORE_LOCATION_KEY = "ssl.server.keystore.location";
+  public static final String  HAS_SERVER_HTTPS_TRUSTSTORE_LOCATION_KEY = "ssl.server.truststore.location";
+  public static final String  HAS_SERVER_HTTPS_TRUSTSTORE_PASSWORD_KEY = "ssl.server.truststore.password";
+  public static final String  HAS_CLIENT_HTTPS_NEED_AUTH_KEY = "has.client.https.need-auth";
+  public static final boolean HAS_CLIENT_HTTPS_NEED_AUTH_DEFAULT = false;
 }
