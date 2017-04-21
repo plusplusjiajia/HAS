@@ -103,7 +103,7 @@ public class HASWebMethods {
 
     private Response put(AuthType type, String regionId, String accessKeyId, String secret,
                          String userName,String clients) {
-        final HASKdcServer kdcServer = (HASKdcServer) context.getAttribute("kdcserver");
+        final HASKdcServer kdcServer = HttpKdcServerImpl.getKdcServerFromContext(context);
         switch (type) {
             case ALIYUN: {
 

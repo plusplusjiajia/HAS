@@ -72,7 +72,6 @@ public class HASKdcServer extends KdcServer {
 
         LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
 
-
         kadmin.createBuiltinPrincipals();
 
         kadmin.addPrincipal("hdfs/localhost@HADOOP.COM");
@@ -86,8 +85,6 @@ public class HASKdcServer extends KdcServer {
           + " has been exported to the specified file "
           + keytabFile.getAbsolutePath() + ", please safely keep it, "
           + "in order to use it start hadoop services later");
-
-        kadmin.addPrincipal("hdfs1");
     }
     public void getKeytab (String nameNode,String dataNodeStr) throws KrbException{
         LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
