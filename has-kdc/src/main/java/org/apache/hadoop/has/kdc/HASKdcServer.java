@@ -31,6 +31,9 @@ import org.apache.kerby.kerberos.kerb.client.KrbConfig;
 import org.apache.kerby.kerberos.kerb.client.KrbSetting;
 import org.apache.kerby.kerberos.kerb.server.KdcServer;
 import org.apache.kerby.util.OSUtil;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -86,14 +89,24 @@ public class HASKdcServer extends KdcServer {
           + keytabFile.getAbsolutePath() + ", please safely keep it, "
           + "in order to use it start hadoop services later");
     }
-    public void getKeytab (String nameNode,String dataNodeStr) throws KrbException{
+    public File addPrincs (String nameNodes) throws KrbException, JSONException {
         LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
-        File keytabFile = new File("/etc/hadoop/conf/"+nameNode+".keytab");
-        String[] dataNodes = dataNodeStr.split(",");
-        for (String dataNode:dataNodes) {
-            kadmin.addPrincipal(dataNode+"/"+nameNode+"localhost@HADOOP.COM");
-            kadmin.exportKeytab(keytabFile,dataNode+"/"+nameNode+"localhost@HADOOP.COM");
+        JSONArray ja = new JSONObject(nameNodes).getJSONArray("HDFS");
+        File keytabFile = new File("/etc/hadoop/conf/hadoop.keytab");
+        for (int i= 0;i<ja.length();i++){
+            String nameNode = ja.getJSONObject(i).getString("NameNode");
+            kadmin.addPrincipal("hdfs/" + nameNode +"@HADOOP.COM");
+            kadmin.addPrincipal("HTTP/" + nameNode +"@HADOOP.COM");
+            kadmin.exportKeytab(keytabFile, "hdfs/" + nameNode +"@HADOOP.COM");
+            kadmin.exportKeytab(keytabFile, "HTTP/" + nameNode +"@HADOOP.COM");
         }
+        return keytabFile;
+//        String[] dataNodes = dataNodeStr.split(",");
+//        for (String dataNode:dataNodes) {
+//            kadmin.addPrincipal(dataNode+"/"+nameNode+"@HADOOP.COM");
+//            System.out.println("already add principal:"+dataNode+"/"+nameNode+"@HADOOP.COM");
+//            kadmin.exportKeytab(keytabFile,dataNode+"/"+nameNode+"@HADOOP.COM");
+//        }
     }
     private static final String USAGE = (OSUtil.isWindows()
             ? "Usage: bin\\start-kdc.cmd" : "Usage: sh bin/start-kdc.sh")
