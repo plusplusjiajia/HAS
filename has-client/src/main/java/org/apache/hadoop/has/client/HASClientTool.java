@@ -19,10 +19,16 @@
  */
 package org.apache.hadoop.has.client;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.type.ticket.TgtTicket;
 
+/**
+ * HAS client tool
+ */
 public class HASClientTool {
+        public static final Log LOG = LogFactory.getLog(HASClientTool.class);
 
     public static void main(String[] args) {
 
@@ -33,6 +39,9 @@ public class HASClientTool {
         } catch (KrbException e) {
             e.printStackTrace();
         }
+
+        LOG.info("Get the tgt ticket successfully!");
+
     }
 
 }

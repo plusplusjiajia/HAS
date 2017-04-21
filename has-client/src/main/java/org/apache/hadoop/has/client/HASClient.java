@@ -24,6 +24,7 @@ import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.has.common.HASUtil;
 import org.apache.kerby.kerberos.kerb.KrbCodec;
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.crypto.EncryptionHandler;
@@ -48,6 +49,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+/**
+ * HAS client
+ */
 public class HASClient {
     public static final Log LOG = LogFactory.getLog(HASClient.class);
     public static final String AK_ENV_NAME = "AK_CONFIG";
@@ -151,13 +155,13 @@ public class HASClient {
     public TgtTicket processResponse(KdcRep kdcRep, String accessKeyId, String secret)
         throws KrbException {
 
-        System.out.print("as rep: " + kdcRep.getCname());
-
         PrincipalName clientPrincipal = kdcRep.getCname();
         String clientRealm = kdcRep.getCrealm();
         clientPrincipal.setRealm(clientRealm);
 
-        EncryptionKey clientKey = getClientKey(clientPrincipal.getName(), accessKeyId, secret,
+        // Get the client to decrypt the EncryptedData
+        EncryptionKey clientKey = HASUtil.getClientKey(clientPrincipal.getName(),
+            accessKeyId, secret,
             kdcRep.getEncryptedEncPart().getEType());
 
         byte[] decryptedData = decryptWithClientKey(kdcRep.getEncryptedEncPart(),
@@ -201,16 +205,8 @@ public class HASClient {
 //        }
 
         TgtTicket tgtTicket = getTicket(kdcRep);
-//        CredentialCache cCache = new CredentialCache(tgtTicket);
         return tgtTicket;
 
-    }
-
-    public EncryptionKey getClientKey(String userName, String accessKeyId, String secret,
-                                      EncryptionType type) throws KrbException {
-        EncryptionKey clientKey = EncryptionHandler.string2Key(userName,
-            accessKeyId + secret, type);
-        return clientKey;
     }
 
     protected byte[] decryptWithClientKey(EncryptedData data,
@@ -221,6 +217,11 @@ public class HASClient {
         return EncryptionHandler.decrypt(data, clientKey, usage);
     }
 
+    /**
+     * Get the tgt ticket from KdcRep
+     *
+     * @param kdcRep
+     */
     public TgtTicket getTicket(KdcRep kdcRep) {
         TgtTicket tgtTicket = new TgtTicket(kdcRep.getTicket(),
             (EncAsRepPart) kdcRep.getEncPart(), kdcRep.getCname());
@@ -232,7 +233,6 @@ public class HASClient {
      *
      * @param akConfigFile configuration file
      * @return ak configuration
-     * @throws sun.security.krb5.KrbException e.
      */
     public AKConfig getAKConfig(File akConfigFile) throws KrbException {
         if (akConfigFile.exists()) {

@@ -32,7 +32,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 /**
- * Encapsulates the HTTP server started by the NameNode.
+ * Encapsulates the HTTP server started by the HAS KDC.
  */
 @InterfaceAudience.Private
 public class HASHttpServer {
@@ -54,7 +54,7 @@ public class HASHttpServer {
   private void init(Configuration conf) throws IOException {
 
     final String pathSpec = "/has/v1/*";
-    // add webhdfs packages
+    // add has packages
     httpServer.addJerseyResourcePackage(HASHttpServer.class
         .getPackage().getName(),
         pathSpec);

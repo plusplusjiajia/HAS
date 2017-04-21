@@ -16,41 +16,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
   <parent>
-    <groupId>org.apache</groupId>
-    <artifactId>apache</artifactId>
-    <version>18</version>
-    <relativePath/>
+    <groupId>org.apache.hadoop</groupId>
+    <artifactId>has-main</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.hadoop</groupId>
-  <artifactId>has-main</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
-  <description>Hadoop Authentication Server</description>
-  <name>Hadoop Authentication Server</name>
-  <packaging>pom</packaging>
+  <artifactId>has-common</artifactId>
+  <name>HAS Common</name>
+  <description>HAS Common</description>
+  <packaging>jar</packaging>
 
-  <modules>
-    <module>has-kdc</module>
-    <module>has-client</module>
-    <module>ram</module>
-    <module>has-common</module>
-  </modules>
-
-  <build>
-    <plugins>
-        <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>kerb-core</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kerby</groupId>
+      <artifactId>kerb-crypto</artifactId>
+      <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
 
 </project>
-
-

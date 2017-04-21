@@ -57,6 +57,10 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+/**
+ * TicketLoginModule is based on Krb5LoginMoule.
+ * The client's TGT will be retrieved from the API of HASClient
+ */
 public class TicketLoginModule implements LoginModule {
 
       public static final Log LOG = LogFactory.getLog(TicketLoginModule.class);

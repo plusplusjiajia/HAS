@@ -25,6 +25,7 @@ import com.aliyuncs.profile.DefaultProfile;
 import com.aliyuncs.profile.IClientProfile;
 import com.aliyuncs.ram.model.v20150501.GetUserRequest;
 import com.aliyuncs.ram.model.v20150501.GetUserResponse;
+import org.apache.hadoop.has.common.HASUtil;
 import org.apache.kerby.kerberos.kerb.KrbCodec;
 import org.apache.kerby.kerberos.kerb.KrbErrorCode;
 import org.apache.kerby.kerberos.kerb.KrbException;
@@ -114,6 +115,7 @@ public class HASKdcHandler {
     public AuthToken getAuthToken(String regionId, String accessKeyId, String secret, String userName) {
 
         // setting the proxy
+        // Just for intel env
         String host = "child-prc.intel.com";
         String port = "913";
         System.setProperty("http.proxyHost", host);
@@ -121,9 +123,7 @@ public class HASKdcHandler {
         System.setProperty("https.proxyHost", host);
         System.setProperty("https.proxyPort", port);
 
-        IClientProfile profile = DefaultProfile.getProfile(regionId,
-            accessKeyId,
-            secret);
+        IClientProfile profile = DefaultProfile.getProfile(regionId, accessKeyId, secret);
         DefaultAcsClient client = new DefaultAcsClient(profile);
         final GetUserRequest request = new GetUserRequest();
         request.setUserName(userName);
@@ -208,7 +208,7 @@ public class HASKdcHandler {
         }
         clientPrincipal.setRealm(clientRealm);
 
-        EncryptionKey clientKey = getClientKey(clientPrincipal.getName(),
+        EncryptionKey clientKey = HASUtil.getClientKey(clientPrincipal.getName(),
             accessKeyId, secret, bestType);
         kdcRequest.setClientKey(clientKey);
 
@@ -253,13 +253,6 @@ public class HASKdcHandler {
             }
         }
         return krbResponse;
-    }
-
-    public EncryptionKey getClientKey(String userName, String accessKeyId, String secret,
-                                      EncryptionType type) throws KrbException {
-        EncryptionKey clientKey = EncryptionHandler.string2Key(userName,
-            accessKeyId + secret, type);
-        return clientKey;
     }
 
     /**

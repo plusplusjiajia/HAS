@@ -31,16 +31,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.aliyun</groupId>
-      <artifactId>aliyun-java-sdk-ram</artifactId>
-      <version>2.0.7</version>
-    </dependency>
-    <dependency>
-      <groupId>com.aliyun</groupId>
-      <artifactId>aliyun-java-sdk-core</artifactId>
-      <version>2.2.3</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.kerby</groupId>
       <artifactId>kerb-core</artifactId>
       <version>1.0.0-RC3-SNAPSHOT</version>
@@ -101,6 +91,11 @@
       <groupId>org.apache.kerby</groupId>
       <artifactId>kerb-server-api-all</artifactId>
       <version>1.0.0-RC3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>has-common</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

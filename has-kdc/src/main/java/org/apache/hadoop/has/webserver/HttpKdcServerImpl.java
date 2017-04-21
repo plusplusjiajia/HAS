@@ -37,12 +37,11 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 /**
- * A Netty based KDC server implementation.
+ * A HTTP and Netty based KDC server implementation.
  */
 public class HttpKdcServerImpl extends NettyKdcServerImpl {
     public static final Log LOG = LogFactory.getLog(HttpKdcServerImpl.class.getName());
 
-    private KdcContext kdcContext;
     private HttpServer2 httpServer;
     private final Configuration conf;
 
@@ -66,8 +65,8 @@ public class HttpKdcServerImpl extends NettyKdcServerImpl {
     private void init(Configuration conf) throws IOException {
 
         final String pathSpec = "/has/v1/*";
-        // add webhdfs packages
-        httpServer.addJerseyResourcePackage(HASHttpServer.class
+        // add has packages
+        httpServer.addJerseyResourcePackage(HASWebMethods.class
                 .getPackage().getName(),
             pathSpec);
     }
@@ -92,7 +91,6 @@ public class HttpKdcServerImpl extends NettyKdcServerImpl {
 
         LOG.info("Http kdc server stopped.");
     }
-
 
     /**
      * Get http policy.
@@ -306,5 +304,4 @@ public class HttpKdcServerImpl extends NettyKdcServerImpl {
     public HttpServer2 getHttpServer() {
         return httpServer;
     }
-
 }
