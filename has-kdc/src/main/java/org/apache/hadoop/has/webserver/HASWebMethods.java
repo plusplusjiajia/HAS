@@ -28,9 +28,7 @@ import org.apache.hadoop.has.webserver.resources.*;
 import org.apache.hadoop.http.JettyUtils;
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.type.base.KrbMessage;
-import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.*;
@@ -38,7 +36,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
@@ -55,15 +52,15 @@ public class HASWebMethods {
 
     /**
      *
-     * @param nameNode
-     * @return nameNode.keytab
+     * @param hostName
+     * @return hostname.keytab
      */
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public Response get(@QueryParam(NameNodeParam.NAME) @DefaultValue(NameNodeParam.DEFAULT)
-                          final NameNodeParam nameNode) throws Exception {
-        if (nameNode.getValue()!=null){
-            File file = new File("/etc/hadoop/conf/"+nameNode.getValue()+".keytab");
+    public Response get(@QueryParam(HostNameParam.NAME) @DefaultValue(HostNameParam.DEFAULT)
+                          final HostNameParam hostName) throws Exception {
+        if (hostName.getValue()!=null){
+            File file = new File("/etc/hadoop/conf/"+hostName.getValue()+".keytab");
             if (file.exists()){
                 return Response.ok(file).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
             }
@@ -143,7 +140,7 @@ public class HASWebMethods {
                     return Response.serverError().build();
                 }
             }
-            case HDFS:{
+            case ADMIN:{
                 if (clients != null){
                     try {
                         File file = kdcServer.addPrincs(clients);

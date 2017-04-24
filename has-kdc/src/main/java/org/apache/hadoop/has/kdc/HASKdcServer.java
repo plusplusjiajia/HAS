@@ -89,9 +89,9 @@ public class HASKdcServer extends KdcServer {
           + keytabFile.getAbsolutePath() + ", please safely keep it, "
           + "in order to use it start hadoop services later");
     }
-    public File addPrincs (String nameNodes) throws KrbException, JSONException {
+    public File addPrincs (String hostnames) throws KrbException, JSONException {
         LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
-        JSONArray ja = new JSONObject(nameNodes).getJSONArray("HDFS");
+        JSONArray ja = new JSONObject(hostnames).getJSONArray("HOSTS");
         File keytabFile = new File("/etc/hadoop/conf/hadoop.keytab");
         for (int i= 0;i<ja.length();i++){
             String nameNode = ja.getJSONObject(i).getString("NameNode");

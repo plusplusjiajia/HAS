@@ -41,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Utilities for handling URLs
  */
-@InterfaceAudience.LimitedPrivate({ "HDFS" })
 @InterfaceStability.Unstable
 public class URLConnectionFactory {
   private static final Logger LOG = LoggerFactory

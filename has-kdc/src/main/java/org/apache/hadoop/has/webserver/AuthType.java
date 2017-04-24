@@ -24,6 +24,6 @@ import org.apache.hadoop.classification.InterfaceStability;
 @InterfaceStability.Stable
 public enum AuthType {
   ALIYUN,
-  HDFS,
+  ADMIN,
   NULL;
 }
