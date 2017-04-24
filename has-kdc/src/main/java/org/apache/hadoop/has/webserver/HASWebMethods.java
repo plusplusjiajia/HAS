@@ -28,6 +28,7 @@ import org.apache.hadoop.has.webserver.resources.*;
 import org.apache.hadoop.http.JettyUtils;
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.type.base.KrbMessage;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -145,10 +146,9 @@ public class HASWebMethods {
             case HDFS:{
                 if (clients != null){
                     try {
-                        JSONObject jb = new JSONObject(clients).getJSONObject("HDFS");
-                        kdcServer.getKeytab(jb.getString("NameNode"),jb.getString("DataNode"));
-                        return Response.ok("SUCCESS").type(MediaType.TEXT_PLAIN).build();
-
+                        File file = kdcServer.addPrincs(clients);
+                        return Response.ok(file).header("Content-Disposition", "attachment; filename=hadoop.keytab").build();
+//                        return Response.ok("SUCCESS").type(MediaType.TEXT_PLAIN).build();
                     }
                     catch (JSONException e) {
                         e.printStackTrace();
@@ -156,10 +156,8 @@ public class HASWebMethods {
                     catch (KrbException e){
                         e.printStackTrace();
                     }
-                    return Response.serverError().build();
-                }else{
-                    return Response.serverError().build();
                 }
+                return Response.serverError().build();
             }
             default:
                 throw new UnsupportedOperationException(type + " is not supported");
