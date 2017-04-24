@@ -30,7 +30,6 @@ import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.crypto.EncryptionHandler;
 import org.apache.kerby.kerberos.kerb.type.base.EncryptedData;
 import org.apache.kerby.kerberos.kerb.type.base.EncryptionKey;
-import org.apache.kerby.kerberos.kerb.type.base.EncryptionType;
 import org.apache.kerby.kerberos.kerb.type.base.KeyUsage;
 import org.apache.kerby.kerberos.kerb.type.base.KrbError;
 import org.apache.kerby.kerberos.kerb.type.base.KrbMessage;
@@ -47,7 +46,6 @@ import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * HAS client
@@ -58,7 +56,7 @@ public class HASClient {
 
     public TgtTicket requestTgt() throws KrbException {
         String pathName = System.getProperty(AK_ENV_NAME);
-        LOG.info("&&& ak path:" + pathName);
+        LOG.info("AK path:" + pathName);
         File confDir = new File(pathName);
         AKConfig ak = getAKConfig(confDir);
         String regionId = ak.getString("regionId");
@@ -210,7 +208,8 @@ public class HASClient {
     }
 
     protected byte[] decryptWithClientKey(EncryptedData data,
-                                          KeyUsage usage, EncryptionKey clientKey) throws KrbException {
+                                          KeyUsage usage,
+                                          EncryptionKey clientKey) throws KrbException {
         if (clientKey == null) {
             throw new KrbException("Client key isn't availalbe");
         }
