@@ -17,9 +17,9 @@
  */
 package org.apache.hadoop.has.webserver.resources;
 
-public class NameNodeParam extends StringParam {
+public class HostNameParam extends StringParam {
       /** Parameter name. */
-  public static final String NAME = "nameNode";
+  public static final String NAME = "hostName";
   /** Default parameter value. */
   public static final String DEFAULT = "";
 
@@ -29,7 +29,7 @@ public class NameNodeParam extends StringParam {
    * Constructor.
    * @param str a string representation of the parameter value.
    */
-  public NameNodeParam(final String str) {
+  public HostNameParam(final String str) {
     super(DOMAIN, str == null || str.equals(DEFAULT)? null: str);
   }
 

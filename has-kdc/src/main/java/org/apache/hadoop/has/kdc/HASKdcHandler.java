@@ -127,7 +127,6 @@ public class HASKdcHandler {
         DefaultAcsClient client = new DefaultAcsClient(profile);
         final GetUserRequest request = new GetUserRequest();
         request.setUserName(userName);
-
         GetUserResponse response = null;
         try {
             response = client.getAcsResponse(request);
@@ -145,17 +144,15 @@ public class HASKdcHandler {
 
         AuthToken authToken = KrbRuntime.getTokenProvider().createTokenFactory().createToken();
         authToken.setIssuer("Aliyun");
-//        //TODO get the host name from  conf
-//        String username = response.getUser().getUserName() + "/" + "localhost";
         authToken.setSubject(response.getUser().getUserName());
         List<String> auds = new ArrayList<String>();
         String audience = getAudience("krbtgt");
         auds.add(audience);
         authToken.setAudiences(auds);
-//        authToken.setIssueTime(new Date(response.getUser().getCreateDate()));
 
-        // Set expiration in 60 minutes
         final Date now = new Date(new Date().getTime() / 1000 * 1000);
+        authToken.setIssueTime(now);
+        // Set expiration in 60 minutes
         Date exp = new Date(now.getTime() + 1000 * 60 * 60);
         authToken.setExpirationTime(exp);
 
@@ -341,10 +338,6 @@ public class HASKdcHandler {
     }
 
     private PrincipalName getServerPrincipal() {
-        return makeTgsPrincipal();
-    }
-
-    private PrincipalName makeTgsPrincipal() {
         return KrbUtil.makeTgsPrincipal(getKrbContext().getKrbSetting().getKdcRealm());
     }
 

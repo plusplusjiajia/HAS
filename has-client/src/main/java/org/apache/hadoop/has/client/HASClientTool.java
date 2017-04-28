@@ -41,7 +41,6 @@ public class HASClientTool {
         }
 
         LOG.info("Get the tgt ticket successfully!");
-
     }
 
 }
