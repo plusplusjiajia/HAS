@@ -1,0 +1,344 @@
+Index: has-client/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- has-client/pom.xml	(revision 2bde39908a9ace2e813a1ade9f16e5f52e242286)
++++ has-client/pom.xml	(revision )
+@@ -97,6 +97,68 @@
+       <artifactId>has-common</artifactId>
+       <version>1.0.0-SNAPSHOT</version>
+     </dependency>
++      <dependency>
++          <groupId>org.apache.hadoop</groupId>
++          <artifactId>has-kdc</artifactId>
++          <version>1.0.0-SNAPSHOT</version>
++      </dependency>
+   </dependencies>
++  <build>
++    <plugins>
++      <plugin>
++        <groupId>org.apache.maven.plugins</groupId>
++        <artifactId>maven-dependency-plugin</artifactId>
++        <executions>
++          <execution>
++            <id>copy</id>
++            <phase>package</phase>
++            <goals>
++              <goal>copy-dependencies</goal>
++            </goals>
++            <configuration>
++              <outputDirectory>target/lib</outputDirectory>
++            </configuration>
++          </execution>
++        </executions>
++      </plugin>
++      <plugin>
++        <groupId>org.apache.maven.plugins</groupId>
++        <artifactId>maven-antrun-plugin</artifactId>
++        <executions>
++          <execution>
++            <id>dist</id>
++            <phase>compile</phase>
++            <goals>
++              <goal>run</goal>
++            </goals>
++            <configuration>
++              <target>
++                <copy toDir="${project.build.directory}/">
++                  <fileset dir="${basedir}/src/main/resources/">
++                  </fileset>
++                </copy>
++                <!--<copy toDir="${project.build.directory}/">
++                  <fileset dir="${basedir}/src/main/bin/">
++                  </fileset>
++                </copy>
++
++                <copy toDir="${project.build.directory}/webapps">
++                  <fileset dir="${basedir}/src/main/webapps">
++                    <exclude name="**/proto-web.xml"/>
++                  </fileset>
++                </copy>
++                <copy todir="${project.build.directory}/test-classes/webapps">
++                  <fileset dir="${project.build.directory}/webapps">
++                    <exclude name="proto-*-web.xml"/>
++                    <exclude name="**/proto-web.xml"/>
++                  </fileset>
++                </copy>-->
++              </target>
++            </configuration>
++          </execution>
++        </executions>
++      </plugin>
++    </plugins>
++  </build>
+ 
+ </project>
+Index: has-kdc/src/main/java/org/apache/hadoop/has/webserver/HASWebMethods.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- has-kdc/src/main/java/org/apache/hadoop/has/webserver/HASWebMethods.java	(revision 2bde39908a9ace2e813a1ade9f16e5f52e242286)
++++ has-kdc/src/main/java/org/apache/hadoop/has/webserver/HASWebMethods.java	(revision )
+@@ -55,17 +55,19 @@
+ 
+     /**
+      *
+-     * @param nameNode
++     * @param principalParam
+      * @return nameNode.keytab
+      */
+     @GET
+     @Produces(MediaType.TEXT_PLAIN)
+-    public Response get(@QueryParam(NameNodeParam.NAME) @DefaultValue(NameNodeParam.DEFAULT)
+-                          final NameNodeParam nameNode) throws Exception {
+-        if (nameNode.getValue()!=null){
+-            File file = new File("/etc/hadoop/conf/"+nameNode.getValue()+".keytab");
++    public Response get(@QueryParam(PrincipalParam.NAME) @DefaultValue(PrincipalParam.DEFAULT)
++                          final PrincipalParam principalParam) throws Exception {
++        final HASKdcServer kdcServer = HttpKdcServerImpl.getKdcServerFromContext(context);
++        if (principalParam.getValue()!=null){
++            File file = kdcServer.addAdminPrincs(principalParam.getValue());
++            System.out.println(file.getName());
+             if (file.exists()){
+-                return Response.ok(file).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
++                return Response.ok(file).header("Content-Disposition", "attachment; filename=admin.keytab").build();
+             }
+         }
+         return Response.serverError().build();
+@@ -143,7 +145,7 @@
+                     return Response.serverError().build();
+                 }
+             }
+-            case HDFS:{
++            case ADMIN:{
+                 if (clients != null){
+                     try {
+                         File file = kdcServer.addPrincs(clients);
+Index: has-kdc/src/main/java/org/apache/hadoop/has/kdc/HASKdcServer.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- has-kdc/src/main/java/org/apache/hadoop/has/kdc/HASKdcServer.java	(revision 2bde39908a9ace2e813a1ade9f16e5f52e242286)
++++ has-kdc/src/main/java/org/apache/hadoop/has/kdc/HASKdcServer.java	(revision )
+@@ -89,9 +89,17 @@
+           + keytabFile.getAbsolutePath() + ", please safely keep it, "
+           + "in order to use it start hadoop services later");
+     }
++    public File addAdminPrincs (String adminPrinc) throws KrbException{
++        System.out.println(adminPrinc);
++        LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
++        File keytabFile = new File("/etc/hadoop/conf/admin.keytab");
++        kadmin.addPrincipal(adminPrinc);
++        kadmin.exportKeytab(keytabFile,adminPrinc);
++        return keytabFile;
++    }
+     public File addPrincs (String nameNodes) throws KrbException, JSONException {
+         LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
+-        JSONArray ja = new JSONObject(nameNodes).getJSONArray("HDFS");
++        JSONArray ja = new JSONObject(nameNodes).getJSONArray("HOSTS");
+         File keytabFile = new File("/etc/hadoop/conf/hadoop.keytab");
+         for (int i= 0;i<ja.length();i++){
+             String nameNode = ja.getJSONObject(i).getString("NameNode");
+Index: has-client/src/main/java/org/apache/hadoop/has/client/HASAdminClient.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- has-client/src/main/java/org/apache/hadoop/has/client/HASAdminClient.java	(revision 2bde39908a9ace2e813a1ade9f16e5f52e242286)
++++ has-client/src/main/java/org/apache/hadoop/has/client/HASAdminClient.java	(revision )
+@@ -17,9 +17,99 @@
+  */
+ package org.apache.hadoop.has.client;
+ 
++import com.sun.jersey.api.client.Client;
++import com.sun.jersey.api.client.ClientResponse;
++import com.sun.jersey.api.client.WebResource;
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
++import org.apache.http.HttpResponse;
++import org.apache.http.client.methods.HttpGet;
++import org.apache.kerby.kerberos.kerb.KrbException;
++import javax.ws.rs.core.Response;
++import java.io.*;
++
+ /**
+  * A Admin client API for applications to interact with KDC
+  */
+ public class HASAdminClient {
++    public static final Log LOG = LogFactory.getLog(HASClient.class);
++    private HasConfig hasConfig;
+ 
++    public HASAdminClient(File confDir) throws KrbException{
++        System.out.println(System.getProperty("user.dir"));
++     //   this.hasConfig = getHasConfig(new File(System.getProperty("user.dir") + "has.conf"));
++        //test
++        this.hasConfig = getHasConfig(new File(System.getProperty("user.dir") + "/has-client/target/has.conf"));
++        this.init();
++    }
++
++    /**
++     *
++     * @throws KrbException
++     */
++    public void init() throws KrbException{
++        Client client = Client.create();
++        File keytabFile = new File(this.hasConfig.getString("admin_keytab"));
++        /*
++        LocalKadmin kadmin = new LocalKadminImpl(getKdcSetting(), getIdentityService());
++        kadmin.addPrincipal(this.hasConfig.getString("admin_princ"),"123456");
++        kadmin.exportKeytab(keytabFile,this.hasConfig.getString("admin_princ"));*/
++        String uri = "http://"+this.hasConfig.getString("has_host")
++                +"/has/v1/welcome?principal="+this.hasConfig.getString("admin_princ");
++        System.out.println(uri);
++        HttpGet httpget = new HttpGet(uri);
++        WebResource webResource = client.resource(uri);
++        ClientResponse response = webResource.get(ClientResponse.class);
++        if (response.getStatus() != 200) {//老是406。。
++            throw new RuntimeException("Failed : HTTP error code : "
++                    + response.getStatus());
++        }
++        if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
++            BufferedInputStream bis = new BufferedInputStream(response.getEntityInputStream());
++            BufferedOutputStream bos = null;
++            try {
++                bos = new BufferedOutputStream(new FileOutputStream(keytabFile));
++                int len = 2048;
++                byte[] b = new byte[len];
++                while ((len = bis.read(b)) != -1)
++                {
++                    bos.write(b, 0, len);
++                }
++                System.out.println(b.length);
++                bos.flush();
++                bis.close();
++            } catch (Exception e) {
++                e.printStackTrace();
++            }
++            System.out.println("SUCCESS");
++        } else {
++            System.out.println("ERROR! " + response.getStatus());
++            System.out.println(response.getEntity(String.class));
++        }
++    }
++
++
++
++    public HasConfig getHasConfig(File hasConfigFile) throws KrbException {
++        if (hasConfigFile.exists()) {
++            HasConfig hasConfig = new HasConfig();
++            try {
++                hasConfig.addIniConfig(hasConfigFile);
++            } catch (IOException e) {
++                throw new KrbException("Can not load the has configuration file "
++                        + hasConfigFile.getAbsolutePath());
++            }
++            return hasConfig;
++        } else {
++            throw new KrbException("Should set the has.conf");
++        }
++    }
++
++    public static void main(String[] args){
++        try {
++            new HASAdminClient(new File("conf"));
++        } catch (KrbException e) {
++            e.printStackTrace();
++        }
++    }
+ }
+Index: has-kdc/src/main/java/org/apache/hadoop/has/webserver/AuthType.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- has-kdc/src/main/java/org/apache/hadoop/has/webserver/AuthType.java	(revision 2bde39908a9ace2e813a1ade9f16e5f52e242286)
++++ has-kdc/src/main/java/org/apache/hadoop/has/webserver/AuthType.java	(revision )
+@@ -24,6 +24,6 @@
+ @InterfaceStability.Stable
+ public enum AuthType {
+   ALIYUN,
+-  HDFS,
++  ADMIN,
+   NULL;
+ }
+Index: has-client/src/main/java/org/apache/hadoop/has/client/HasConfig.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- has-client/src/main/java/org/apache/hadoop/has/client/HasConfig.java	(revision )
++++ has-client/src/main/java/org/apache/hadoop/has/client/HasConfig.java	(revision )
+@@ -0,0 +1,40 @@
++/**
++ *  Licensed to the Apache Software Foundation (ASF) under one
++ *  or more contributor license agreements.  See the NOTICE file
++ *  distributed with this work for additional information
++ *  regarding copyright ownership.  The ASF licenses this file
++ *  to you under the Apache License, Version 2.0 (the
++ *  "License"); you may not use this file except in compliance
++ *  with the License.  You may obtain a copy of the License at
++ *
++ *    http://www.apache.org/licenses/LICENSE-2.0
++ *
++ *  Unless required by applicable law or agreed to in writing,
++ *  software distributed under the License is distributed on an
++ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ *  KIND, either express or implied.  See the License for the
++ *  specific language governing permissions and limitations
++ *  under the License.
++ *
++ */
++package org.apache.hadoop.has.client;
++
++import org.apache.kerby.config.Conf;
++
++import java.io.File;
++
++/**
++ * HAS configuration API.
++ */
++public class HasConfig extends Conf {
++    private File confDir;
++
++    public void setConfDir(File dir) {
++        this.confDir = dir;
++    }
++
++    public File getConfDir() {
++        return confDir;
++    }
++}
++
+Index: has-client/src/main/resources/has.conf
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- has-client/src/main/resources/has.conf	(revision )
++++ has-client/src/main/resources/has.conf	(revision )
+@@ -0,0 +1,21 @@
++#
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++has_host = localhost:8091
++admin_keytab = /home/plus/admin.keytab
++admin_princ = jiajia/admin@HADOOP.COM
+\ No newline at end of file
